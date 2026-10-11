@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rich-struct"
+version = "0.1.0"
+description = "rich.print with 21 popular editor themes (Tokyo Night, Dracula, Nord, ...) and print_md/json/yaml/xml/object/table helpers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Mirek Wiertel" }]
+dependencies = ["rich>=13"]
+keywords = ["rich", "print", "theme", "terminal", "markdown", "syntax highlighting"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Topic :: Terminals",
+]
+
+[project.optional-dependencies]
+yaml = ["pyyaml"]
+
+[project.urls]
+Homepage = "https://github.com/wiertmir/rich-struct"
+Issues = "https://github.com/wiertmir/rich-struct/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rich_struct"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["demos.ipynb"]
