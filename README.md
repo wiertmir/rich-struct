@@ -27,6 +27,7 @@ print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword":
 ```
 
 Every function takes `theme=`: a `ThemeName`, its string value, or a rich `Theme`.
+Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
 `ThemeName.X.theme` gives you the underlying rich `Theme` to use with your own `Console`.
 
 ## Tables

@@ -51,6 +51,9 @@ def print(
     The theme's background is painted across the full terminal width unless
     ``background=False`` (or the output has no colour, e.g. when piped to a file).
     Extra keyword arguments go to ``Console.print`` (``style``, ``justify``, ...).
+
+    Every ``print_*`` helper accepts None and prints it as ``None`` in the theme's
+    ``repr.none`` style (``print_json`` prints JSON's ``null``, in the same colour).
     """
     rich_theme = theme if isinstance(theme, Theme) else ThemeName(theme).theme
     code_theme = syntax_theme(rich_theme)
@@ -74,14 +77,18 @@ def print(
     console.print(*objects, sep=sep, end=end, **kwargs)
 
 
-def print_md(markdown: str, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
+def print_md(markdown: Optional[str], *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
+    if markdown is None:
+        return print(None, theme=theme, **kwargs)
     print(Markdown(markdown), theme=theme, **kwargs)
 
 
 def print_syntax(
-    code: str, lexer: str, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any
+    code: Optional[str], lexer: str, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any
 ) -> None:
     """Print ``code`` highlighted with any pygments ``lexer`` ("python", "toml", ...)."""
+    if code is None:
+        return print(None, theme=theme, **kwargs)
     print(Syntax(code, lexer, word_wrap=True), theme=theme, **kwargs)
 
 
@@ -93,6 +100,8 @@ def print_json(data: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) ->
 
 def print_yaml(data: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
     """Print a YAML string, or dump an object as YAML (needs ``rich-struct[yaml]``)."""
+    if data is None:
+        return print(None, theme=theme, **kwargs)
     if not isinstance(data, str):
         import yaml
 
@@ -101,12 +110,14 @@ def print_yaml(data: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) ->
 
 
 def print_xml(
-    data: Union[str, ET.Element, ET.ElementTree],
+    data: Union[str, ET.Element, ET.ElementTree, None],
     *,
     theme: ThemeType = DEFAULT_THEME,
     **kwargs: Any,
 ) -> None:
     """Print an XML string as-is, or an ElementTree element indented."""
+    if data is None:
+        return print(None, theme=theme, **kwargs)
     if not isinstance(data, str):
         root = data.getroot() if isinstance(data, ET.ElementTree) else data
         ET.indent(root)
@@ -116,6 +127,8 @@ def print_xml(
 
 def print_object(obj: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
     """Pretty-print any Python object (dataclasses, dicts, nested structures...)."""
+    if obj is None:
+        return print(None, theme=theme, **kwargs)
     print(Pretty(obj, expand_all=True), theme=theme, **kwargs)
 
 
@@ -133,5 +146,7 @@ def print_table(
     Lists of dicts become records, lists of lists a grid. Data longer than
     ``max_rows``/``max_cols`` shows its head and tail around a "…" gap.
     """
+    if data is None:
+        return print(None, theme=theme, **kwargs)
     table = to_table(data, title=title, max_rows=max_rows, max_cols=max_cols)
     print(table, theme=theme, **kwargs)

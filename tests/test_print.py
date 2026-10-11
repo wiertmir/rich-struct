@@ -62,6 +62,19 @@ def test_every_printer_with_every_theme_kind(theme):
     assert "def" in render(rt.print_syntax, "def f(): pass", "python", theme=theme)
 
 
+def test_every_printer_accepts_none(monkeypatch):
+    helpers = [rt.print, rt.print_md, rt.print_yaml, rt.print_xml, rt.print_object, rt.print_table]
+    for fn in helpers:
+        assert render(fn, None) == "None\n", fn.__name__
+    assert render(rt.print_syntax, None, "python") == "None\n"
+    assert render(rt.print_table, None, title="t", max_rows=3) == "None\n"
+    assert render(rt.print_json, None) == "null\n"
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    for fn in [*helpers, rt.print_json]:
+        assert "3;38;2;187;154;247" in render(fn, None), fn.__name__  # italic Tokyo Night purple
+
+
 def test_plain_print_matches_builtin_semantics():
     assert render(rt.print, "a", "b", sep="-", end="!") == "a-b!"
 
