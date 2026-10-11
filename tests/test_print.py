@@ -75,6 +75,26 @@ def test_every_printer_accepts_none(monkeypatch):
         assert "3;38;2;187;154;247" in render(fn, None), fn.__name__  # italic Tokyo Night purple
 
 
+def test_set_default_theme_changes_every_printer(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    tokyo_bg, nord_bg, dracula_bg = "48;2;26;27;38", "48;2;46;52;64", "48;2;40;42;54"
+    printers = [rt.print, rt.print_md, rt.print_json, rt.print_yaml, rt.print_xml, rt.print_object, rt.print_table]
+    try:
+        rt.set_default_theme("Nord")
+        for fn in printers:
+            out = render(fn, "1")
+            assert nord_bg in out and tokyo_bg not in out, fn.__name__
+        assert dracula_bg in render(rt.print, "x", theme="Dracula")  # explicit theme still wins
+        rt.set_default_theme(Theme({"background": "white on #010203"}))
+        assert "48;2;1;2;3" in render(rt.print_md, "x")
+        with pytest.raises(ValueError):
+            rt.set_default_theme("Nope")
+    finally:
+        rt.set_default_theme()
+    assert tokyo_bg in render(rt.print, "x")
+
+
 def test_plain_print_matches_builtin_semantics():
     assert render(rt.print, "a", "b", sep="-", end="!") == "a-b!"
 

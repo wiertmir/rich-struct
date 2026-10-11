@@ -28,10 +28,24 @@ __all__ = [
     "print_table",
     "print_xml",
     "print_yaml",
+    "set_default_theme",
     "to_table",
 ]
 
 ThemeType = Union[ThemeName, Theme, ThemeLiteral]
+
+_default_theme: ThemeType = DEFAULT_THEME
+
+
+def set_default_theme(theme: ThemeType = DEFAULT_THEME) -> None:
+    """Set the theme used by every print function called without ``theme=``.
+
+    Call it with no argument to go back to Tokyo Night.
+    """
+    global _default_theme
+    if not isinstance(theme, Theme):
+        theme = ThemeName(theme)  # fail here, not at the next print
+    _default_theme = theme
 
 
 def print(
@@ -39,13 +53,14 @@ def print(
     sep: str = " ",
     end: str = "\n",
     file: Optional[IO[str]] = None,
-    theme: ThemeType = DEFAULT_THEME,
+    theme: Optional[ThemeType] = None,
     background: bool = True,
     **kwargs: Any,
 ) -> None:
     """``rich.print`` with a theme.
 
-    ``theme`` is a :class:`ThemeName` (or its string value) or a rich ``Theme``.
+    ``theme`` is a :class:`ThemeName` (or its string value) or a rich ``Theme``;
+    left out, it is the default theme (see :func:`set_default_theme`).
     ``Markdown`` and ``Syntax`` objects get their code colours from the theme too,
     and numpy arrays, pandas DataFrames and Series are shown as tables.
     The theme's background is painted across the full terminal width unless
@@ -55,6 +70,8 @@ def print(
     Every ``print_*`` helper accepts None and prints it as ``None`` in the theme's
     ``repr.none`` style (``print_json`` prints JSON's ``null``, in the same colour).
     """
+    if theme is None:
+        theme = _default_theme
     rich_theme = theme if isinstance(theme, Theme) else ThemeName(theme).theme
     code_theme = syntax_theme(rich_theme)
     objects = tuple(to_table(obj) if is_array(obj) else obj for obj in objects)
@@ -77,14 +94,14 @@ def print(
     console.print(*objects, sep=sep, end=end, **kwargs)
 
 
-def print_md(markdown: Optional[str], *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
+def print_md(markdown: Optional[str], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
     if markdown is None:
         return print(None, theme=theme, **kwargs)
     print(Markdown(markdown), theme=theme, **kwargs)
 
 
 def print_syntax(
-    code: Optional[str], lexer: str, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any
+    code: Optional[str], lexer: str, *, theme: Optional[ThemeType] = None, **kwargs: Any
 ) -> None:
     """Print ``code`` highlighted with any pygments ``lexer`` ("python", "toml", ...)."""
     if code is None:
@@ -92,13 +109,13 @@ def print_syntax(
     print(Syntax(code, lexer, word_wrap=True), theme=theme, **kwargs)
 
 
-def print_json(data: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
+def print_json(data: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
     """Print a JSON string, or any JSON-serialisable object."""
     json = JSON(data) if isinstance(data, str) else JSON.from_data(data, default=str)
     print(json, theme=theme, **kwargs)
 
 
-def print_yaml(data: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
+def print_yaml(data: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
     """Print a YAML string, or dump an object as YAML (needs ``rich-struct[yaml]``)."""
     if data is None:
         return print(None, theme=theme, **kwargs)
@@ -112,7 +129,7 @@ def print_yaml(data: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) ->
 def print_xml(
     data: Union[str, ET.Element, ET.ElementTree, None],
     *,
-    theme: ThemeType = DEFAULT_THEME,
+    theme: Optional[ThemeType] = None,
     **kwargs: Any,
 ) -> None:
     """Print an XML string as-is, or an ElementTree element indented."""
@@ -125,7 +142,7 @@ def print_xml(
     print_syntax(data.rstrip("\n"), "xml", theme=theme, **kwargs)
 
 
-def print_object(obj: Any, *, theme: ThemeType = DEFAULT_THEME, **kwargs: Any) -> None:
+def print_object(obj: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
     """Pretty-print any Python object (dataclasses, dicts, nested structures...)."""
     if obj is None:
         return print(None, theme=theme, **kwargs)
@@ -138,7 +155,7 @@ def print_table(
     title: Optional[str] = None,
     max_rows: int = 20,
     max_cols: int = 10,
-    theme: ThemeType = DEFAULT_THEME,
+    theme: Optional[ThemeType] = None,
     **kwargs: Any,
 ) -> None:
     """Print a list, array, numpy array, pandas DataFrame or Series as a table.

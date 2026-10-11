@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rich-struct"
-version = "0.1.1"
+version = "0.1.2"
 description = "rich.print with 21 popular editor themes (Tokyo Night, Dracula, Nord, ...) and print_md/json/yaml/xml/object/table helpers"
 readme = "README.md"
 requires-python = ">=3.9"
