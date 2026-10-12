@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import IO, Any, Optional, Union
 
 from rich.console import Console
+from rich.highlighter import ReprHighlighter
 from rich.json import JSON
 from rich.markdown import Markdown
 from rich.padding import Padding
@@ -33,6 +34,13 @@ __all__ = [
 ]
 
 ThemeType = Union[ThemeName, Theme, ThemeLiteral]
+
+
+class _ObjectHighlighter(ReprHighlighter):
+    """rich's repr highlighting, plus dict keys as ``repr.key`` (themes without it show them as strings)."""
+
+    # ponytail: any quoted string followed by ": " counts as a key; a real parser if that misfires
+    highlights = [*ReprHighlighter.highlights, r"""(?P<key>(?<!\w)(?:'[^'\n]*'|"[^"\n]*"))(?=: )"""]
 
 _default_theme: ThemeType = DEFAULT_THEME
 
@@ -149,7 +157,7 @@ def print_obj(obj: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> 
     """Pretty-print any Python object (dataclasses, dicts, nested structures...)."""
     if obj is None:
         return print(None, theme=theme, **kwargs)
-    print(Pretty(obj, expand_all=True), theme=theme, **kwargs)
+    print(Pretty(obj, expand_all=True, highlighter=_ObjectHighlighter()), theme=theme, **kwargs)
 
 
 def print_table(

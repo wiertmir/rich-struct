@@ -145,13 +145,14 @@ _OVERRIDES = {
         "markdown.link_url": "underline #38bdf8",  # rich styles link text with link_url
         "markdown.hr": "#475569",
         "json.brace": "#94a3b8",
-        "json.key": "#7dd3fc",
+        "json.key": "#a3c2f2",
         "json.bool_true": "bold #22d3ee",
         "json.bool_false": "bold #22d3ee",
         "json.null": "italic #a78bfa",
         # objects (print_obj)
         "repr.background": "on #0f172a",
-        "repr.attrib_name": "#cbd5e1",
+        "repr.attrib_name": "#a3c2f2",
+        "repr.key": "#a3c2f2",
         "repr.call": "bold #22d3ee",
         "repr.str": "#a3e635",
         "repr.number": "#fbbf24",
@@ -187,13 +188,14 @@ _OVERRIDES = {
         "markdown.link_url": "underline #2563eb",  # rich styles link text with link_url
         "markdown.hr": "#cbd5e1",
         "json.brace": "#64748b",
-        "json.key": "#0369a1",
+        "json.key": "#1e3f7a",
         "json.bool_true": "bold #0e7490",
         "json.bool_false": "bold #0e7490",
         "json.null": "italic #7c3aed",
         # objects (print_obj)
         "repr.background": "on #ffffff",
-        "repr.attrib_name": "#1f2937",
+        "repr.attrib_name": "#1e3f7a",
+        "repr.key": "#1e3f7a",
         "repr.call": "bold #2563eb",
         "repr.str": "#16853a",
         "repr.number": "#b45309",

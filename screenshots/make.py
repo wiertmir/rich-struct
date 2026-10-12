@@ -77,16 +77,30 @@ class Role(Enum):
 
 
 @dataclass
+class Address:
+    city: str
+    postcode: str
+
+
+@dataclass
 class User:
     name: str
     age: int
     active: bool = True
     email: Optional[str] = None
     role: Role = Role.ADMIN
+    address: Optional[Address] = None
     tags: List[str] = field(default_factory=list)
+    settings: dict = field(default_factory=dict)
 
 
-OBJECT = {"user": User("Ada", 36, tags=["admin", "dev"]), "url": "https://example.com/a?b=1", "pi": 3.14159}
+OBJECT = User(
+    "Ada",
+    36,
+    address=Address("Kraków", "30-001"),
+    tags=["admin", "dev"],
+    settings={"theme": "dark", "retries": 3, "ratio": 0.75},
+)
 
 RECORDS = [
     {"id": 1, "name": "Ada", "score": 91.5, "admin": True},
