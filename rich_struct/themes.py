@@ -143,12 +143,23 @@ _TOKENS = {
 }
 
 
+def _distance(a: str, b: str) -> float:
+    """Perceptual ("redmean") distance between two #rrggbb colours; about 765 for black vs white."""
+    (r1, g1, b1), (r2, g2, b2) = ([int(c[i : i + 2], 16) for i in (1, 3, 5)] for c in (a, b))
+    red = (r1 + r2) / 2
+    return (
+        (2 + red / 256) * (r1 - r2) ** 2 + 4 * (g1 - g2) ** 2 + (2 + (255 - red) / 256) * (b1 - b2) ** 2
+    ) ** 0.5
+
+
 @lru_cache(maxsize=None)
 def _build(name: ThemeName) -> Theme:
     bg, fg, comment, red, orange, yellow, green, cyan, blue, purple = (
         "#" + c for c in _PALETTES[name].split()
     )
     muted = _MUTED.get(name, comment)
+    # list bullets and numbers: the accent that stands out most from the text and from bold text
+    marker = max((blue, purple, cyan), key=lambda c: min(_distance(c, fg), _distance(c, orange)))
     return Theme(
         {
             "background": f"{fg} on {bg}",
@@ -182,8 +193,8 @@ def _build(name: ThemeName) -> Theme:
             "markdown.code_block": fg,
             "markdown.block_quote": f"italic {comment}",
             "markdown.item": fg,
-            "markdown.item.bullet": f"bold {yellow}",
-            "markdown.item.number": f"bold {yellow}",
+            "markdown.item.bullet": f"bold {marker}",
+            "markdown.item.number": f"bold {marker}",
             "markdown.hr": muted,
             "markdown.link": blue,
             "markdown.link_url": f"underline {cyan}",

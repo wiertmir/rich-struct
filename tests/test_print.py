@@ -12,6 +12,7 @@ from rich.theme import Theme
 
 import rich_struct as rt
 from rich_struct import ThemeName
+from rich_struct.themes import _distance
 
 
 def render(fn, *args, **kwargs) -> str:
@@ -94,6 +95,16 @@ def test_set_default_theme_changes_every_printer(monkeypatch):
     finally:
         rt.set_default_theme()
     assert tokyo_bg in render(rt.print, "x")
+
+
+def test_list_markers_stand_out_from_the_text():
+    for t in ThemeName:
+        styles = t.theme.styles
+        hexes = {key: styles[key].color.get_truecolor().hex for key in
+                 ("markdown.item.bullet", "markdown.item.number", "markdown.text", "markdown.strong")}
+        assert hexes["markdown.item.bullet"] == hexes["markdown.item.number"]
+        for other in ("markdown.text", "markdown.strong"):
+            assert _distance(hexes["markdown.item.bullet"], hexes[other]) > 90, (t.value, other)
 
 
 def test_plain_print_matches_builtin_semantics():
