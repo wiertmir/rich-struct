@@ -6,6 +6,7 @@ import re
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 
@@ -70,12 +71,18 @@ CODE = '''def fibonacci(n: int) -> list[int]:
 '''
 
 
+class Role(Enum):
+    ADMIN = 1
+    GUEST = 2
+
+
 @dataclass
 class User:
     name: str
     age: int
     active: bool = True
     email: Optional[str] = None
+    role: Role = Role.ADMIN
     tags: List[str] = field(default_factory=list)
 
 
@@ -104,7 +111,7 @@ SHOTS = [  # file name, theme, call
     ("json", ThemeName.NORD, lambda **kw: rs.print_json(JSON, **kw)),
     ("yaml", ThemeName.ONE_DARK_PRO, lambda **kw: rs.print_yaml(YAML, **kw)),
     ("xml", ThemeName.GITHUB_DARK, lambda **kw: rs.print_xml(XML, **kw)),
-    ("object", ThemeName.CATPPUCCIN_MOCHA, lambda **kw: rs.print_object(OBJECT, **kw)),
+    ("object", ThemeName.CATPPUCCIN_MOCHA, lambda **kw: rs.print_obj(OBJECT, **kw)),
     ("code", ThemeName.ONE_LIGHT, lambda **kw: rs.print_syntax(CODE, "python", **kw)),
     ("list", ThemeName.CATPPUCCIN_LATTE, lambda **kw: rs.print_table(RECORDS, **kw)),
     ("numpy", ThemeName.SOLARIZED_DARK, lambda **kw: rs.print_table(ARRAY, **kw)),

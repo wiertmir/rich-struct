@@ -149,6 +149,22 @@ _OVERRIDES = {
         "json.bool_true": "bold #22d3ee",
         "json.bool_false": "bold #22d3ee",
         "json.null": "italic #a78bfa",
+        # objects (print_obj)
+        "repr.background": "on #0f172a",
+        "repr.attrib_name": "#cbd5e1",
+        "repr.call": "bold #22d3ee",
+        "repr.str": "#a3e635",
+        "repr.number": "#fbbf24",
+        "repr.number_complex": "#fbbf24",
+        "repr.none": "italic #c4b5fd",
+        "repr.bool_true": "italic #86efac",
+        "repr.bool_false": "italic #86efac",
+        "repr.tag_name": "#86efac",  # enum members print as <Role.ADMIN: 1>
+        "repr.attrib_equal": "#f8fafc",
+        "repr.brace": "#94a3b8",
+        "repr.comma": "#94a3b8",
+        "repr.tag_start": "#94a3b8",
+        "repr.tag_end": "#94a3b8",
     },
     T.PAPER_FROST: {
         "syntax.tag": "#0369a1",
@@ -175,6 +191,22 @@ _OVERRIDES = {
         "json.bool_true": "bold #0e7490",
         "json.bool_false": "bold #0e7490",
         "json.null": "italic #7c3aed",
+        # objects (print_obj)
+        "repr.background": "on #ffffff",
+        "repr.attrib_name": "#1f2937",
+        "repr.call": "bold #2563eb",
+        "repr.str": "#16853a",
+        "repr.number": "#b45309",
+        "repr.number_complex": "#b45309",
+        "repr.none": "italic #7c3aed",
+        "repr.bool_true": "italic #059669",
+        "repr.bool_false": "italic #059669",
+        "repr.tag_name": "#059669",  # enum members print as <Role.ADMIN: 1>
+        "repr.attrib_equal": "#111111",
+        "repr.brace": "#475569",
+        "repr.comma": "#475569",
+        "repr.tag_start": "#475569",
+        "repr.tag_end": "#475569",
     },
 }
 del T

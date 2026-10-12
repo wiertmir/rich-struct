@@ -9,7 +9,7 @@ pip install rich-struct          # add [yaml] to dump objects with print_yaml
 ```python
 from rich.markdown import Markdown
 from rich.theme import Theme
-from rich_struct import ThemeName, print, print_md, print_json, print_yaml, print_xml, print_object, print_syntax, print_table
+from rich_struct import ThemeName, print, print_md, print_json, print_yaml, print_xml, print_obj, print_syntax, print_table
 
 print("[bold]hello[/bold]", {"a": 1})                 # drop-in rich.print, Midnight Slate by default
 print(Markdown("## Printing structs"), theme=ThemeName.DRACULA)
@@ -18,7 +18,7 @@ print_md("# Title\n\n```python\nprint('hi')\n```")
 print_json({"a": [1, 2, None]}, theme="Nord")         # enum value as a string works too
 print_yaml("a: 1\nb: [x, y]")
 print_xml("<a><b c='d'/></a>")
-print_object(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
+print_obj(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
 print(df)                                             # arrays and frames become tables in print too
@@ -51,7 +51,7 @@ One per kind of struct, each in a different theme. The [demo notebook](https://g
 
 ![XML in the GitHub Dark theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/xml.png)
 
-**Python objects** — `print_object`, Catppuccin Mocha
+**Python objects** — `print_obj`, Catppuccin Mocha
 
 ![Python objects in the Catppuccin Mocha theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/object.png)
 
@@ -108,4 +108,4 @@ Themes are built from each theme's colour palette, not ported token-by-token fro
 
 Output is painted on the theme's background across the full terminal width. Pass `background=False` to keep the terminal's own background; nothing is painted or padded when the output has no colour (e.g. piped to a file). A custom `Theme` gets a background by defining a `background` style, e.g. `"background": "#c0caf5 on #1a1b26"`.
 
-Code colours come from `syntax.*` styles (`text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute`, `operator`); a custom `Theme` may override any of them, and may set `syntax.block` (e.g. `"on #111c2e"`) to shade code blocks inside Markdown.
+Code colours come from `syntax.*` styles (`text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute`, `operator`); a custom `Theme` may override any of them, and may set `syntax.block` (e.g. `"on #111c2e"`) to shade code blocks inside Markdown, and `repr.background` to give `print_obj` output its own background.

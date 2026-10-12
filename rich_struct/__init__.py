@@ -23,7 +23,7 @@ __all__ = [
     "print",
     "print_json",
     "print_md",
-    "print_object",
+    "print_obj",
     "print_syntax",
     "print_table",
     "print_xml",
@@ -84,6 +84,9 @@ def print(
     console = Console(theme=rich_theme, file=file)
     base = rich_theme.styles.get("background")
     if background and base and console.color_system:
+        if objects and all(isinstance(obj, Pretty) for obj in objects):
+            # a theme may give objects their own background
+            base += rich_theme.styles.get("repr.background", base)
         # fill whole lines: Padding expands renderables, justify pads plain text
         objects = tuple(
             Padding(obj, 0) if is_renderable(obj) and not isinstance(obj, str) else obj
@@ -142,7 +145,7 @@ def print_xml(
     print_syntax(data.rstrip("\n"), "xml", theme=theme, **kwargs)
 
 
-def print_object(obj: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
+def print_obj(obj: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
     """Pretty-print any Python object (dataclasses, dicts, nested structures...)."""
     if obj is None:
         return print(None, theme=theme, **kwargs)

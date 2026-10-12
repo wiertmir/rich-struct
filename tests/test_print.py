@@ -61,12 +61,12 @@ def test_every_printer_with_every_theme_kind(theme):
     assert "a: 1" in render(rt.print_yaml, "a: 1\n", theme=theme)
     assert "<a>" in render(rt.print_xml, "<a><b/></a>", theme=theme)
     assert "<b />" in render(rt.print_xml, ET.fromstring("<a><b/></a>"), theme=theme)
-    assert "Point(" in render(rt.print_object, Point(1, "y"), theme=theme)
+    assert "Point(" in render(rt.print_obj, Point(1, "y"), theme=theme)
     assert "def" in render(rt.print_syntax, "def f(): pass", "python", theme=theme)
 
 
 def test_every_printer_accepts_none(monkeypatch):
-    helpers = [rt.print, rt.print_md, rt.print_yaml, rt.print_xml, rt.print_object, rt.print_table]
+    helpers = [rt.print, rt.print_md, rt.print_yaml, rt.print_xml, rt.print_obj, rt.print_table]
     for fn in helpers:
         assert render(fn, None) == "None\n", fn.__name__
     assert render(rt.print_syntax, None, "python") == "None\n"
@@ -74,15 +74,16 @@ def test_every_printer_accepts_none(monkeypatch):
     assert render(rt.print_json, None) == "null\n"
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
-    for fn in [*helpers, rt.print_json]:
-        assert "3;38;2;167;139;250" in render(fn, None), fn.__name__  # italic Midnight Slate violet
+    for fn in helpers:
+        assert "3;38;2;196;181;253" in render(fn, None), fn.__name__  # italic #c4b5fd
+    assert "3;38;2;167;139;250" in render(rt.print_json, None)  # JSON null, italic #a78bfa
 
 
 def test_set_default_theme_changes_every_printer(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     default_bg, nord_bg, dracula_bg = "48;2;11;19;32", "48;2;46;52;64", "48;2;40;42;54"
-    printers = [rt.print, rt.print_md, rt.print_json, rt.print_yaml, rt.print_xml, rt.print_object, rt.print_table]
+    printers = [rt.print, rt.print_md, rt.print_json, rt.print_yaml, rt.print_xml, rt.print_obj, rt.print_table]
     try:
         rt.set_default_theme("Nord")
         for fn in printers:
@@ -117,6 +118,17 @@ def test_theme_specific_styles_and_markdown_code_block_background(monkeypatch):
     assert block_bg not in render(rt.print_syntax, "x = 1", "python", theme="Midnight Slate")
     mine = Theme({"syntax.block": "on #010203"})  # custom themes can shade code blocks too
     assert "48;2;1;2;3" in render(rt.print_md, "```python\nx = 1\n```", theme=mine)
+
+
+def test_objects_get_their_own_colours_and_background_in_midnight_slate(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    page_bg, object_bg = "48;2;11;19;32", "48;2;15;23;42"  # #0b1320, #0f172a
+    out = render(rt.print_obj, Point(1, "y"))
+    assert object_bg in out and page_bg not in out
+    assert "38;2;203;213;225" in out and "38;2;34;211;238" in out  # property #cbd5e1, class #22d3ee
+    assert object_bg not in render(rt.print_md, "text") and object_bg not in render(rt.print_obj, 1, background=False)
+    assert "48;2;46;52;64" in render(rt.print_obj, 1, theme="Nord")  # other themes: the page background
 
 
 def test_plain_print_matches_builtin_semantics():
