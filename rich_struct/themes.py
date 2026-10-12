@@ -33,6 +33,7 @@ class ThemeName(str, Enum):
     GITHUB_DARK = "GitHub Dark"
     NIGHT_OWL = "Night Owl"
     WINTER_IS_COMING = "Winter is Coming"
+    DARK_MODERN = "Dark Modern"
     # light
     GITHUB_LIGHT = "GitHub Light"
     SOLARIZED_LIGHT = "Solarized Light"
@@ -44,6 +45,7 @@ class ThemeName(str, Enum):
     NIGHT_OWL_LIGHT = "Night Owl Light"
     LIGHT_PLUS = "Light+"
     EVERFOREST_LIGHT = "Everforest Light"
+    LIGHT_MODERN = "Light Modern"
 
     @property
     def is_dark(self) -> bool:
@@ -68,6 +70,7 @@ ThemeLiteral = Literal[
     "GitHub Dark",
     "Night Owl",
     "Winter is Coming",
+    "Dark Modern",
     "GitHub Light",
     "Solarized Light",
     "One Light",
@@ -78,6 +81,7 @@ ThemeLiteral = Literal[
     "Night Owl Light",
     "Light+",
     "Everforest Light",
+    "Light Modern",
 ]
 
 DEFAULT_THEME = ThemeName.TOKYO_NIGHT
@@ -96,6 +100,7 @@ _PALETTES = {
     T.GITHUB_DARK:       "0d1117 c9d1d9 8b949e ff7b72 ffa657 e3b341 7ee787 a5d6ff 79c0ff d2a8ff",
     T.NIGHT_OWL:         "011627 d6deeb 637777 ef5350 f78c6c ecc48d addb67 7fdbca 82aaff c792ea",
     T.WINTER_IS_COMING:  "011627 a7dbf7 999999 ef5350 8dec95 f7ecb5 bcf0c0 7fdbca 87aff4 00bff9",
+    T.DARK_MODERN:       "1f1f1f cccccc 6a9955 f44747 ce9178 dcdcaa b5cea8 4ec9b0 569cd6 c586c0",
     T.GITHUB_LIGHT:      "ffffff 24292f 6e7781 cf222e 953800 9a6700 116329 1b7c83 0550ae 8250df",
     T.SOLARIZED_LIGHT:   "fdf6e3 657b83 93a1a1 dc322f cb4b16 b58900 859900 2aa198 268bd2 6c71c4",
     T.ONE_LIGHT:         "fafafa 383a42 a0a1a7 e45649 986801 c18401 50a14f 0184bc 4078f2 a626a4",
@@ -106,8 +111,11 @@ _PALETTES = {
     T.NIGHT_OWL_LIGHT:   "fbfbfb 403f53 989fb1 de3d3b c96765 daaa01 08916a 0c969b 4876d6 994cc3",
     T.LIGHT_PLUS:        "ffffff 000000 008000 a31515 811f3f 795e26 098658 267f99 0000ff af00db",
     T.EVERFOREST_LIGHT:  "fdf6e3 5c6a72 939f91 f85552 f57d26 dfa000 8da101 35a77c 3a94c5 df69ba",
+    T.LIGHT_MODERN:      "ffffff 3b3b3b 008000 a31515 811f3f 795e26 098658 267f99 0000ff af00db",
 }
-_DARK = frozenset(list(T)[:11])
+_DARK = frozenset(list(T)[:12])
+# Borders, rules and captions use the comment colour, except where comments are green.
+_MUTED = {T.DARK_MODERN: "#6e7681", T.LIGHT_MODERN: "#767676", T.LIGHT_PLUS: "#767676"}
 del T
 
 # pygments token -> name of the "syntax.*" style that colours it
@@ -140,6 +148,7 @@ def _build(name: ThemeName) -> Theme:
     bg, fg, comment, red, orange, yellow, green, cyan, blue, purple = (
         "#" + c for c in _PALETTES[name].split()
     )
+    muted = _MUTED.get(name, comment)
     return Theme(
         {
             "background": f"{fg} on {bg}",
@@ -158,7 +167,7 @@ def _build(name: ThemeName) -> Theme:
             "markdown.paragraph": fg,
             "markdown.text": fg,
             "markdown.h1": f"bold {purple}",
-            "markdown.h1.border": comment,
+            "markdown.h1.border": muted,
             "markdown.h2": f"bold {blue}",
             "markdown.h3": f"bold {cyan}",
             "markdown.h4": f"bold {green}",
@@ -175,10 +184,10 @@ def _build(name: ThemeName) -> Theme:
             "markdown.item": fg,
             "markdown.item.bullet": f"bold {yellow}",
             "markdown.item.number": f"bold {yellow}",
-            "markdown.hr": comment,
+            "markdown.hr": muted,
             "markdown.link": blue,
             "markdown.link_url": f"underline {cyan}",
-            "markdown.table.border": comment,
+            "markdown.table.border": muted,
             "markdown.table.header": f"bold {blue}",
             # json
             "json.key": f"bold {blue}",
@@ -197,8 +206,8 @@ def _build(name: ThemeName) -> Theme:
             "repr.none": f"italic {purple}",
             "repr.brace": f"bold {fg}",
             "repr.comma": fg,
-            "repr.ellipsis": comment,
-            "repr.indent": f"dim {comment}",
+            "repr.ellipsis": muted,
+            "repr.indent": f"dim {muted}",
             "repr.tag_start": fg,
             "repr.tag_name": f"bold {red}",
             "repr.tag_contents": fg,
@@ -219,8 +228,8 @@ def _build(name: ThemeName) -> Theme:
             # misc rich output
             "table.header": f"bold {blue}",
             "table.title": f"bold {purple}",
-            "table.caption": f"italic {comment}",
-            "rule.line": comment,
+            "table.caption": f"italic {muted}",
+            "rule.line": muted,
             "rule.text": blue,
             "pretty": fg,
         }

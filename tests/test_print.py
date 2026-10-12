@@ -39,10 +39,11 @@ class Point:
 MD = "## Printing structs\n\nSome `code` and:\n\n```python\nprint('hi')\n```\n"
 
 
-def test_enum_has_11_dark_10_light_and_all_build():
-    assert sum(t.is_dark for t in ThemeName) == 11
+def test_enum_has_12_dark_11_light_and_all_build():
+    assert sum(t.is_dark for t in ThemeName) == 12
+    assert ThemeName.DARK_MODERN.is_dark and not ThemeName.LIGHT_MODERN.is_dark
     assert ThemeName.WINTER_IS_COMING.is_dark and not ThemeName.GITHUB_LIGHT.is_dark
-    assert sum(not t.is_dark for t in ThemeName) == 10
+    assert sum(not t.is_dark for t in ThemeName) == 11
     assert rt.DEFAULT_THEME is ThemeName.TOKYO_NIGHT
     for t in ThemeName:
         assert isinstance(t.theme, Theme)

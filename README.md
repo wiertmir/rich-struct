@@ -1,6 +1,6 @@
 # rich-struct
 
-[`rich`](https://github.com/Textualize/rich)'s `print`, with 21 popular editor themes and helpers for Markdown, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
+[`rich`](https://github.com/Textualize/rich)'s `print`, with 23 popular editor themes and helpers for Markdown, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
 
 ```sh
 pip install rich-struct          # add [yaml] to dump objects with print_yaml
@@ -31,6 +31,50 @@ To change the theme for all of them at once, call `set_default_theme("Dracula")`
 Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
 `ThemeName.X.theme` gives you the underlying rich `Theme` to use with your own `Console`.
 
+## Screenshots
+
+One per kind of struct, each in a different theme. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) shows every kind in all 23 themes; open it in Jupyter or VS Code to see the colours.
+
+**Markdown** — `print_md`, Tokyo Night
+
+![Markdown in the Tokyo Night theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/markdown.png)
+
+**JSON** — `print_json`, Nord
+
+![JSON in the Nord theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/json.png)
+
+**YAML** — `print_yaml`, One Dark Pro
+
+![YAML in the One Dark Pro theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/yaml.png)
+
+**XML** — `print_xml`, GitHub Dark
+
+![XML in the GitHub Dark theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/xml.png)
+
+**Python objects** — `print_object`, Catppuccin Mocha
+
+![Python objects in the Catppuccin Mocha theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/object.png)
+
+**Code** — `print_syntax`, One Light
+
+![Code in the One Light theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/code.png)
+
+**Lists** — `print_table`, Catppuccin Latte
+
+![Lists in the Catppuccin Latte theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/list.png)
+
+**NumPy arrays** — `print_table`, Solarized Dark
+
+![NumPy arrays in the Solarized Dark theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/numpy.png)
+
+**pandas DataFrames** — `print_table`, GitHub Light
+
+![pandas DataFrames in the GitHub Light theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/dataframe.png)
+
+**pandas Series** — `print_table`, Night Owl
+
+![pandas Series in the Night Owl theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/series.png)
+
 ## Tables
 
 `print_table(data, title=None, max_rows=20, max_cols=10)` accepts:
@@ -56,7 +100,8 @@ Long data shows its head and tail around a `…` gap, and columns that don't fit
 | Solarized Dark | Night Owl Light |
 | GitHub Dark | Light+ |
 | Night Owl | Everforest Light |
-| Winter is Coming | |
+| Winter is Coming | Light Modern |
+| Dark Modern | |
 
 Themes are built from each theme's colour palette, not ported token-by-token from the editor.
 
