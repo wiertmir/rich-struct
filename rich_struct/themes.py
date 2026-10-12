@@ -34,6 +34,7 @@ class ThemeName(str, Enum):
     NIGHT_OWL = "Night Owl"
     WINTER_IS_COMING = "Winter is Coming"
     DARK_MODERN = "Dark Modern"
+    MIDNIGHT_SLATE = "Midnight Slate"
     # light
     GITHUB_LIGHT = "GitHub Light"
     SOLARIZED_LIGHT = "Solarized Light"
@@ -46,6 +47,7 @@ class ThemeName(str, Enum):
     LIGHT_PLUS = "Light+"
     EVERFOREST_LIGHT = "Everforest Light"
     LIGHT_MODERN = "Light Modern"
+    PAPER_FROST = "Paper Frost"
 
     @property
     def is_dark(self) -> bool:
@@ -71,6 +73,7 @@ ThemeLiteral = Literal[
     "Night Owl",
     "Winter is Coming",
     "Dark Modern",
+    "Midnight Slate",
     "GitHub Light",
     "Solarized Light",
     "One Light",
@@ -82,9 +85,10 @@ ThemeLiteral = Literal[
     "Light+",
     "Everforest Light",
     "Light Modern",
+    "Paper Frost",
 ]
 
-DEFAULT_THEME = ThemeName.TOKYO_NIGHT
+DEFAULT_THEME = ThemeName.MIDNIGHT_SLATE
 
 T = ThemeName
 #                       bg     fg     comment   red       orange    yellow    green     cyan      blue      purple
@@ -101,6 +105,7 @@ _PALETTES = {
     T.NIGHT_OWL:         "011627 d6deeb 637777 ef5350 f78c6c ecc48d addb67 7fdbca 82aaff c792ea",
     T.WINTER_IS_COMING:  "011627 a7dbf7 999999 ef5350 8dec95 f7ecb5 bcf0c0 7fdbca 87aff4 00bff9",
     T.DARK_MODERN:       "1f1f1f cccccc 6a9955 f44747 ce9178 dcdcaa b5cea8 4ec9b0 569cd6 c586c0",
+    T.MIDNIGHT_SLATE:    "0b1320 d1d5db 64748b fb7185 fbbf24 fcd34d a3e635 22d3ee 7dd3fc a78bfa",
     T.GITHUB_LIGHT:      "ffffff 24292f 6e7781 cf222e 953800 9a6700 116329 1b7c83 0550ae 8250df",
     T.SOLARIZED_LIGHT:   "fdf6e3 657b83 93a1a1 dc322f cb4b16 b58900 859900 2aa198 268bd2 6c71c4",
     T.ONE_LIGHT:         "fafafa 383a42 a0a1a7 e45649 986801 c18401 50a14f 0184bc 4078f2 a626a4",
@@ -112,10 +117,66 @@ _PALETTES = {
     T.LIGHT_PLUS:        "ffffff 000000 008000 a31515 811f3f 795e26 098658 267f99 0000ff af00db",
     T.EVERFOREST_LIGHT:  "fdf6e3 5c6a72 939f91 f85552 f57d26 dfa000 8da101 35a77c 3a94c5 df69ba",
     T.LIGHT_MODERN:      "ffffff 3b3b3b 008000 a31515 811f3f 795e26 098658 267f99 0000ff af00db",
+    T.PAPER_FROST:       "fafaf7 263238 64748b be123c b45309 a16207 15803d 0e7490 0369a1 7c3aed",
 }
-_DARK = frozenset(list(T)[:12])
+_DARK = frozenset(list(T)[:13])
 # Borders, rules and captions use the comment colour, except where comments are green.
 _MUTED = {T.DARK_MODERN: "#6e7681", T.LIGHT_MODERN: "#767676", T.LIGHT_PLUS: "#767676"}
+# Styles that differ from what the palette alone would give (applied on top in _build).
+_OVERRIDES = {
+    T.MIDNIGHT_SLATE: {
+        "syntax.tag": "#7dd3fc",
+        "syntax.block": "on #111c2e",
+        "markdown.h1": "bold #5eead4",
+        "markdown.h2": "bold #22d3ee",
+        "markdown.h3": "bold #7dd3fc",
+        "markdown.h4": "bold #a5b4fc",
+        "markdown.h5": "#a5b4fc",
+        "markdown.h6": "dim #a5b4fc",
+        "markdown.strong": "bold #f8fafc",
+        "markdown.em": "italic #c4b5fd",
+        "markdown.emph": "italic #c4b5fd",
+        "markdown.s": "strike #64748b",
+        "markdown.code": "#fbbf24 on #111c2e",
+        "markdown.block_quote": "italic #86efac",
+        "markdown.item.bullet": "bold #fbbf24",
+        "markdown.item.number": "bold #fbbf24",
+        "markdown.link": "underline #38bdf8",
+        "markdown.link_url": "underline #38bdf8",  # rich styles link text with link_url
+        "markdown.hr": "#475569",
+        "json.brace": "#94a3b8",
+        "json.key": "#7dd3fc",
+        "json.bool_true": "bold #22d3ee",
+        "json.bool_false": "bold #22d3ee",
+        "json.null": "italic #a78bfa",
+    },
+    T.PAPER_FROST: {
+        "syntax.tag": "#0369a1",
+        "syntax.block": "on #f1f5f9",
+        "markdown.h1": "bold #0f766e",
+        "markdown.h2": "bold #0e7490",
+        "markdown.h3": "bold #0369a1",
+        "markdown.h4": "bold #4f46e5",
+        "markdown.h5": "#4f46e5",
+        "markdown.h6": "dim #4f46e5",
+        "markdown.strong": "bold #111827",
+        "markdown.em": "italic #7c3aed",
+        "markdown.emph": "italic #7c3aed",
+        "markdown.s": "strike #9ca3af",
+        "markdown.code": "#c2410c on #f1f5f9",
+        "markdown.block_quote": "italic #15803d",
+        "markdown.item.bullet": "bold #b45309",
+        "markdown.item.number": "bold #b45309",
+        "markdown.link": "underline #2563eb",
+        "markdown.link_url": "underline #2563eb",  # rich styles link text with link_url
+        "markdown.hr": "#cbd5e1",
+        "json.brace": "#64748b",
+        "json.key": "#0369a1",
+        "json.bool_true": "bold #0e7490",
+        "json.bool_false": "bold #0e7490",
+        "json.null": "italic #7c3aed",
+    },
+}
 del T
 
 # pygments token -> name of the "syntax.*" style that colours it
@@ -160,101 +221,113 @@ def _build(name: ThemeName) -> Theme:
     muted = _MUTED.get(name, comment)
     # list bullets and numbers: the accent that stands out most from the text and from bold text
     marker = max((blue, purple, cyan), key=lambda c: min(_distance(c, fg), _distance(c, orange)))
-    return Theme(
-        {
-            "background": f"{fg} on {bg}",
-            # code (see _TOKENS)
-            "syntax.text": fg,
-            "syntax.comment": f"italic {comment}",
-            "syntax.keyword": purple,
-            "syntax.string": green,
-            "syntax.number": orange,
-            "syntax.function": blue,
-            "syntax.type": cyan,
-            "syntax.tag": red,
-            "syntax.attribute": yellow,
-            "syntax.operator": cyan,
-            # markdown
-            "markdown.paragraph": fg,
-            "markdown.text": fg,
-            "markdown.h1": f"bold {purple}",
-            "markdown.h1.border": muted,
-            "markdown.h2": f"bold {blue}",
-            "markdown.h3": f"bold {cyan}",
-            "markdown.h4": f"bold {green}",
-            "markdown.h5": f"bold {yellow}",
-            "markdown.h6": f"italic {comment}",
-            "markdown.h7": f"italic {comment}",
-            "markdown.strong": f"bold {orange}",
-            "markdown.em": f"italic {yellow}",
-            "markdown.emph": f"italic {yellow}",
-            "markdown.s": f"strike {comment}",
-            "markdown.code": green,
-            "markdown.code_block": fg,
-            "markdown.block_quote": f"italic {comment}",
-            "markdown.item": fg,
-            "markdown.item.bullet": f"bold {marker}",
-            "markdown.item.number": f"bold {marker}",
-            "markdown.hr": muted,
-            "markdown.link": blue,
-            "markdown.link_url": f"underline {cyan}",
-            "markdown.table.border": muted,
-            "markdown.table.header": f"bold {blue}",
-            # json
-            "json.key": f"bold {blue}",
-            "json.str": green,
-            "json.number": orange,
-            "json.bool_true": f"italic {orange}",
-            "json.bool_false": f"italic {orange}",
-            "json.null": f"italic {purple}",
-            "json.brace": f"bold {fg}",
-            # repr / pretty-printed objects
-            "repr.str": green,
-            "repr.number": orange,
-            "repr.number_complex": orange,
-            "repr.bool_true": f"italic {orange}",
-            "repr.bool_false": f"italic {orange}",
-            "repr.none": f"italic {purple}",
-            "repr.brace": f"bold {fg}",
-            "repr.comma": fg,
-            "repr.ellipsis": muted,
-            "repr.indent": f"dim {muted}",
-            "repr.tag_start": fg,
-            "repr.tag_name": f"bold {red}",
-            "repr.tag_contents": fg,
-            "repr.tag_end": fg,
-            "repr.attrib_name": yellow,
-            "repr.attrib_equal": cyan,
-            "repr.attrib_value": purple,
-            "repr.call": f"bold {blue}",
-            "repr.url": f"underline {cyan}",
-            "repr.path": cyan,
-            "repr.filename": f"bold {cyan}",
-            "repr.uuid": yellow,
-            "repr.ipv4": green,
-            "repr.ipv6": green,
-            "repr.eui48": green,
-            "repr.eui64": green,
-            "repr.error": f"bold {red}",
-            # misc rich output
-            "table.header": f"bold {blue}",
-            "table.title": f"bold {purple}",
-            "table.caption": f"italic {muted}",
-            "rule.line": muted,
-            "rule.text": blue,
-            "pretty": fg,
-        }
-    )
+    styles = {
+        "background": f"{fg} on {bg}",
+        # code (see _TOKENS)
+        "syntax.text": fg,
+        "syntax.comment": f"italic {comment}",
+        "syntax.keyword": purple,
+        "syntax.string": green,
+        "syntax.number": orange,
+        "syntax.function": blue,
+        "syntax.type": cyan,
+        "syntax.tag": red,
+        "syntax.attribute": yellow,
+        "syntax.operator": cyan,
+        # markdown
+        "markdown.paragraph": fg,
+        "markdown.text": fg,
+        "markdown.h1": f"bold {purple}",
+        "markdown.h1.border": muted,
+        "markdown.h2": f"bold {blue}",
+        "markdown.h3": f"bold {cyan}",
+        "markdown.h4": f"bold {green}",
+        "markdown.h5": f"bold {yellow}",
+        "markdown.h6": f"italic {comment}",
+        "markdown.h7": f"italic {comment}",
+        "markdown.strong": f"bold {orange}",
+        "markdown.em": f"italic {yellow}",
+        "markdown.emph": f"italic {yellow}",
+        "markdown.s": f"strike {comment}",
+        "markdown.code": green,
+        "markdown.code_block": fg,
+        "markdown.block_quote": f"italic {comment}",
+        "markdown.item": fg,
+        "markdown.item.bullet": f"bold {marker}",
+        "markdown.item.number": f"bold {marker}",
+        "markdown.hr": muted,
+        "markdown.link": blue,
+        "markdown.link_url": f"underline {cyan}",
+        "markdown.table.border": muted,
+        "markdown.table.header": f"bold {blue}",
+        # json
+        "json.key": f"bold {blue}",
+        "json.str": green,
+        "json.number": orange,
+        "json.bool_true": f"italic {orange}",
+        "json.bool_false": f"italic {orange}",
+        "json.null": f"italic {purple}",
+        "json.brace": f"bold {fg}",
+        # repr / pretty-printed objects
+        "repr.str": green,
+        "repr.number": orange,
+        "repr.number_complex": orange,
+        "repr.bool_true": f"italic {orange}",
+        "repr.bool_false": f"italic {orange}",
+        "repr.none": f"italic {purple}",
+        "repr.brace": f"bold {fg}",
+        "repr.comma": fg,
+        "repr.ellipsis": muted,
+        "repr.indent": f"dim {muted}",
+        "repr.tag_start": fg,
+        "repr.tag_name": f"bold {red}",
+        "repr.tag_contents": fg,
+        "repr.tag_end": fg,
+        "repr.attrib_name": yellow,
+        "repr.attrib_equal": cyan,
+        "repr.attrib_value": purple,
+        "repr.call": f"bold {blue}",
+        "repr.url": f"underline {cyan}",
+        "repr.path": cyan,
+        "repr.filename": f"bold {cyan}",
+        "repr.uuid": yellow,
+        "repr.ipv4": green,
+        "repr.ipv6": green,
+        "repr.eui48": green,
+        "repr.eui64": green,
+        "repr.error": f"bold {red}",
+        # misc rich output
+        "table.header": f"bold {blue}",
+        "table.title": f"bold {purple}",
+        "table.caption": f"italic {muted}",
+        "rule.line": muted,
+        "rule.text": blue,
+        "pretty": fg,
+    }
+    styles.update(_OVERRIDES.get(name, {}))
+    return Theme(styles)
 
 
-def syntax_theme(theme: Theme) -> SyntaxTheme:
+class _SyntaxTheme(ANSISyntaxTheme):
+    def __init__(self, style_map: dict, background: Style) -> None:
+        super().__init__(style_map)
+        self.background = background
+
+    def get_background_style(self) -> Style:
+        return self.background
+
+
+def syntax_theme(theme: Theme, block: bool = False) -> SyntaxTheme:
     """Code-highlighting theme from a rich Theme's ``syntax.*`` styles.
 
-    Styles the theme doesn't define fall back to the default theme's.
+    Styles the theme doesn't define fall back to the default theme's. With ``block``
+    (code blocks inside Markdown) the theme's optional ``syntax.block`` style is the
+    background.
     """
     fallback = _build(DEFAULT_THEME).styles
     styles = {
         name: theme.styles.get(f"syntax.{name}", fallback[f"syntax.{name}"])
         for name in set(_TOKENS.values())
     }
-    return ANSISyntaxTheme({token: styles[name] for token, name in _TOKENS.items()})
+    background = theme.styles.get("syntax.block", Style.null()) if block else Style.null()
+    return _SyntaxTheme({token: styles[name] for token, name in _TOKENS.items()}, background)

@@ -40,7 +40,7 @@ _default_theme: ThemeType = DEFAULT_THEME
 def set_default_theme(theme: ThemeType = DEFAULT_THEME) -> None:
     """Set the theme used by every print function called without ``theme=``.
 
-    Call it with no argument to go back to Tokyo Night.
+    Call it with no argument to go back to Midnight Slate.
     """
     global _default_theme
     if not isinstance(theme, Theme):
@@ -77,7 +77,7 @@ def print(
     objects = tuple(to_table(obj) if is_array(obj) else obj for obj in objects)
     for obj in objects:
         if isinstance(obj, Markdown):
-            obj.code_theme = code_theme
+            obj.code_theme = syntax_theme(rich_theme, block=True)
         elif isinstance(obj, Syntax):
             # ponytail: Syntax has no public theme setter; rebuild the object if rich renames this
             obj._theme = code_theme

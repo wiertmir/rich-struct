@@ -100,7 +100,7 @@ DF = pd.DataFrame(
 ).set_index("city")
 
 SHOTS = [  # file name, theme, call
-    ("markdown", ThemeName.TOKYO_NIGHT, lambda **kw: rs.print_md(MARKDOWN, **kw)),
+    ("markdown", ThemeName.MIDNIGHT_SLATE, lambda **kw: rs.print_md(MARKDOWN, **kw)),
     ("json", ThemeName.NORD, lambda **kw: rs.print_json(JSON, **kw)),
     ("yaml", ThemeName.ONE_DARK_PRO, lambda **kw: rs.print_yaml(YAML, **kw)),
     ("xml", ThemeName.GITHUB_DARK, lambda **kw: rs.print_xml(XML, **kw)),

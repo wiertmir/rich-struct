@@ -24,11 +24,11 @@ def render(fn, *args, **kwargs) -> str:
 def test_theme_colours_reach_the_output(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
-    keyword = "38;2;187;154;247"  # Tokyo Night purple, #bb9af7
+    keyword = "38;2;167;139;250"  # Midnight Slate violet, #a78bfa
     assert keyword in render(rt.print_syntax, "def f(): pass", "python")
     assert keyword in render(rt.print_md, "```python\ndef f(): pass\n```")
     assert keyword not in render(rt.print_syntax, "def f(): pass", "python", theme="Nord")
-    assert "38;2;122;162;247" in render(rt.print_json, {"a": 1})  # key, blue #7aa2f7
+    assert "38;2;125;211;252" in render(rt.print_json, {"a": 1})  # key, sky #7dd3fc
 
 
 @dataclass
@@ -40,12 +40,13 @@ class Point:
 MD = "## Printing structs\n\nSome `code` and:\n\n```python\nprint('hi')\n```\n"
 
 
-def test_enum_has_12_dark_11_light_and_all_build():
-    assert sum(t.is_dark for t in ThemeName) == 12
+def test_enum_has_13_dark_12_light_and_all_build():
+    assert sum(t.is_dark for t in ThemeName) == 13
+    assert ThemeName.MIDNIGHT_SLATE.is_dark and not ThemeName.PAPER_FROST.is_dark
     assert ThemeName.DARK_MODERN.is_dark and not ThemeName.LIGHT_MODERN.is_dark
     assert ThemeName.WINTER_IS_COMING.is_dark and not ThemeName.GITHUB_LIGHT.is_dark
-    assert sum(not t.is_dark for t in ThemeName) == 11
-    assert rt.DEFAULT_THEME is ThemeName.TOKYO_NIGHT
+    assert sum(not t.is_dark for t in ThemeName) == 12
+    assert rt.DEFAULT_THEME is ThemeName.MIDNIGHT_SLATE
     for t in ThemeName:
         assert isinstance(t.theme, Theme)
     assert get_args(rt.ThemeLiteral) == tuple(t.value for t in ThemeName)  # autocomplete list
@@ -74,19 +75,19 @@ def test_every_printer_accepts_none(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     for fn in [*helpers, rt.print_json]:
-        assert "3;38;2;187;154;247" in render(fn, None), fn.__name__  # italic Tokyo Night purple
+        assert "3;38;2;167;139;250" in render(fn, None), fn.__name__  # italic Midnight Slate violet
 
 
 def test_set_default_theme_changes_every_printer(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
-    tokyo_bg, nord_bg, dracula_bg = "48;2;26;27;38", "48;2;46;52;64", "48;2;40;42;54"
+    default_bg, nord_bg, dracula_bg = "48;2;11;19;32", "48;2;46;52;64", "48;2;40;42;54"
     printers = [rt.print, rt.print_md, rt.print_json, rt.print_yaml, rt.print_xml, rt.print_object, rt.print_table]
     try:
         rt.set_default_theme("Nord")
         for fn in printers:
             out = render(fn, "1")
-            assert nord_bg in out and tokyo_bg not in out, fn.__name__
+            assert nord_bg in out and default_bg not in out, fn.__name__
         assert dracula_bg in render(rt.print, "x", theme="Dracula")  # explicit theme still wins
         rt.set_default_theme(Theme({"background": "white on #010203"}))
         assert "48;2;1;2;3" in render(rt.print_md, "x")
@@ -94,7 +95,7 @@ def test_set_default_theme_changes_every_printer(monkeypatch):
             rt.set_default_theme("Nope")
     finally:
         rt.set_default_theme()
-    assert tokyo_bg in render(rt.print, "x")
+    assert default_bg in render(rt.print, "x")
 
 
 def test_list_markers_stand_out_from_the_text():
@@ -105,6 +106,17 @@ def test_list_markers_stand_out_from_the_text():
         assert hexes["markdown.item.bullet"] == hexes["markdown.item.number"]
         for other in ("markdown.text", "markdown.strong"):
             assert _distance(hexes["markdown.item.bullet"], hexes[other]) > 90, (t.value, other)
+
+
+def test_theme_specific_styles_and_markdown_code_block_background(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    block_bg, h1 = "48;2;17;28;46", "38;2;94;234;212"  # #111c2e, #5eead4
+    out = render(rt.print_md, "# Title\n\n```python\nx = 1\n```", theme="Midnight Slate")
+    assert block_bg in out and h1 in out
+    assert block_bg not in render(rt.print_syntax, "x = 1", "python", theme="Midnight Slate")
+    mine = Theme({"syntax.block": "on #010203"})  # custom themes can shade code blocks too
+    assert "48;2;1;2;3" in render(rt.print_md, "```python\nx = 1\n```", theme=mine)
 
 
 def test_plain_print_matches_builtin_semantics():
@@ -120,7 +132,7 @@ def test_background_fills_full_width(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     monkeypatch.setenv("COLUMNS", "40")
-    bg = "48;2;26;27;38"  # Tokyo Night #1a1b26
+    bg = "48;2;11;19;32"  # Midnight Slate #0b1320
     table = Table("col")
     table.add_row("x")
     for args in [("hi",), ({"a": 1},), (Markdown(MD),), (table,), ("a", Markdown("b"), 3)]:

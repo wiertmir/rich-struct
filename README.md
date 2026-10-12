@@ -1,6 +1,6 @@
 # rich-struct
 
-[`rich`](https://github.com/Textualize/rich)'s `print`, with 23 popular editor themes and helpers for Markdown, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
+[`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
 
 ```sh
 pip install rich-struct          # add [yaml] to dump objects with print_yaml
@@ -11,7 +11,7 @@ from rich.markdown import Markdown
 from rich.theme import Theme
 from rich_struct import ThemeName, print, print_md, print_json, print_yaml, print_xml, print_object, print_syntax, print_table
 
-print("[bold]hello[/bold]", {"a": 1})                 # drop-in rich.print, Tokyo Night by default
+print("[bold]hello[/bold]", {"a": 1})                 # drop-in rich.print, Midnight Slate by default
 print(Markdown("## Printing structs"), theme=ThemeName.DRACULA)
 
 print_md("# Title\n\n```python\nprint('hi')\n```")
@@ -27,17 +27,17 @@ print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword":
 ```
 
 Every function takes `theme=`: a `ThemeName`, its string value, or a rich `Theme`.
-To change the theme for all of them at once, call `set_default_theme("Dracula")` (same accepted values; no argument resets to Tokyo Night).
+To change the theme for all of them at once, call `set_default_theme("Dracula")` (same accepted values; no argument resets to Midnight Slate).
 Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
 `ThemeName.X.theme` gives you the underlying rich `Theme` to use with your own `Console`.
 
 ## Screenshots
 
-One per kind of struct, each in a different theme. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) shows every kind in all 23 themes; open it in Jupyter or VS Code to see the colours.
+One per kind of struct, each in a different theme. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) shows every kind in all 25 themes; open it in Jupyter or VS Code to see the colours.
 
-**Markdown** — `print_md`, Tokyo Night
+**Markdown** — `print_md`, Midnight Slate (the default)
 
-![Markdown in the Tokyo Night theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/markdown.png)
+![Markdown in the Midnight Slate theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/markdown.png)
 
 **JSON** — `print_json`, Nord
 
@@ -90,7 +90,7 @@ Long data shows its head and tail around a `…` gap, and columns that don't fit
 
 | Dark | Light |
 |---|---|
-| Tokyo Night (default) | GitHub Light |
+| Tokyo Night | GitHub Light |
 | Dracula | Solarized Light |
 | One Dark Pro | One Light |
 | Monokai | Catppuccin Latte |
@@ -101,10 +101,11 @@ Long data shows its head and tail around a `…` gap, and columns that don't fit
 | GitHub Dark | Light+ |
 | Night Owl | Everforest Light |
 | Winter is Coming | Light Modern |
-| Dark Modern | |
+| Dark Modern | Paper Frost |
+| Midnight Slate (default) | |
 
 Themes are built from each theme's colour palette, not ported token-by-token from the editor.
 
 Output is painted on the theme's background across the full terminal width. Pass `background=False` to keep the terminal's own background; nothing is painted or padded when the output has no colour (e.g. piped to a file). A custom `Theme` gets a background by defining a `background` style, e.g. `"background": "#c0caf5 on #1a1b26"`.
 
-Code colours come from `syntax.*` styles (`text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute`, `operator`); a custom `Theme` may override any of them.
+Code colours come from `syntax.*` styles (`text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute`, `operator`); a custom `Theme` may override any of them, and may set `syntax.block` (e.g. `"on #111c2e"`) to shade code blocks inside Markdown.
