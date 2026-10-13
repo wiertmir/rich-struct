@@ -199,3 +199,52 @@ def test_numpy_and_pandas_tables():
     assert "2 rows × 3 columns" in render(rt.print, df)
     assert "shape (2,)" in render(rt.print, np.array([1, 2]))
     assert render(rt.print, [1, 2]) == "[1, 2]\n"
+
+
+def test_print_list():
+    assert render(rt.print_list, [123, 1444.555, "Test text", 4345.666]) == "[123, 1444.555, 'Test text', 4345.666]\n"
+    assert render(rt.print_list, array("d", [1.0, 2.5])) == "[1.0, 2.5]\n"
+    assert render(rt.print_list, None) == "None\n"
+    long = list(range(60))
+    assert len(render(rt.print_list, long).splitlines()) > 1
+    assert render(rt.print_list, long, wrap=False) == f"{long}\n"
+    assert render(rt.print_list, range(10), head_tail_only=True, head_tail_size=2) == "[0, 1  ...  8, 9]\n"
+    assert render(rt.print_list, [1, 2, 3, 4], head_tail_only=True, head_tail_size=2) == "[1, 2, 3, 4]\n"
+    with pytest.raises(ValueError):
+        rt.print_list([1], head_tail_size=0)
+
+
+def test_print_list_gap_is_highlighted(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    out = render(rt.print_list, list(range(10)), head_tail_only=True, head_tail_size=2)
+    assert out.count("\x1b[1;7;") == 1 and "  ...  " in out  # only the gap is bold + reverse
+    long = list(range(60))
+    assert Text.from_ansi(render(rt.print_list, long, wrap=False)).plain.rstrip() == str(long)  # not cropped
+
+
+def test_print_list_numpy_and_pandas():
+    np = pytest.importorskip("numpy")
+    pd = pytest.importorskip("pandas")
+    assert render(rt.print_list, np.array([1.5, 2.0])) == "[1.5, 2.0]\n"
+    assert render(rt.print_list, [np.float64(1.5), "a"]) == "[1.5, 'a']\n"
+    series = pd.Series([10, 20, 30, 40, 50], index=[3, 4, 0, 1, 2])
+    assert render(rt.print_list, series, head_tail_only=True, head_tail_size=1) == "[10  ...  50]\n"
+
+
+def test_print_html_renders_instead_of_showing_tags(monkeypatch):
+    pytest.importorskip("markdownify")
+    html = """<html><head><title>T</title><style>p {color: red}</style></head><body>
+    <!-- hidden --><script>alert(1)</script>
+    <h1>Title</h1><p>Some <b>bold</b> and <a href="https://e.com">a link</a>.</p>
+    <ul><li>one</li><li>two</li></ul>
+    <pre><code class="language-python">def f(): pass</code></pre>
+    <table><tr><th>name</th></tr><tr><td>Ada</td></tr></table></body></html>"""
+    out = render(rt.print_html, html)
+    for shown in ("Title", "Some bold and a link.", "• one", "def f(): pass", "name", "Ada"):
+        assert shown in out
+    for hidden in ("<", "color", "alert", "hidden", "**"):
+        assert hidden not in out
+    assert render(rt.print_html, None) == "None\n"
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    assert "38;2;167;139;250" in render(rt.print_html, html)  # the code block is highlighted as Python

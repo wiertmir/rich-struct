@@ -1,5 +1,6 @@
 """Themed drop-in extension of ``rich.print``."""
 
+import re
 import xml.etree.ElementTree as ET
 from typing import IO, Any, Optional, Union
 
@@ -11,6 +12,7 @@ from rich.padding import Padding
 from rich.pretty import Pretty
 from rich.protocol import is_renderable
 from rich.syntax import Syntax
+from rich.text import Text
 from rich.theme import Theme
 
 from .tables import is_array, to_table
@@ -22,7 +24,9 @@ __all__ = [
     "ThemeName",
     "ThemeType",
     "print",
+    "print_html",
     "print_json",
+    "print_list",
     "print_md",
     "print_obj",
     "print_syntax",
@@ -89,7 +93,8 @@ def print(
         elif isinstance(obj, Syntax):
             # ponytail: Syntax has no public theme setter; rebuild the object if rich renames this
             obj._theme = code_theme
-    console = Console(theme=rich_theme, file=file)
+    # width goes to the Console: Console.print can only narrow it, print_list needs it wider
+    console = Console(theme=rich_theme, file=file, width=kwargs.pop("width", None))
     base = rich_theme.styles.get("background")
     if background and base and console.color_system:
         if objects and all(isinstance(obj, Pretty) for obj in objects):
@@ -109,6 +114,27 @@ def print_md(markdown: Optional[str], *, theme: Optional[ThemeType] = None, **kw
     if markdown is None:
         return print(None, theme=theme, **kwargs)
     print(Markdown(markdown), theme=theme, **kwargs)
+
+
+def _code_language(el: Any) -> str:
+    """The language of a ``<pre>`` block, from a ``language-python`` style class on it or its ``<code>``."""
+    classes = [c for tag in (el, el.find("code")) if tag for c in tag.get("class") or []]
+    return next((c.partition("-")[2] for c in classes if c.startswith(("language-", "lang-"))), "")
+
+
+def print_html(html: Optional[str], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
+    """Print HTML rendered (headings, lists, tables, links...), not its tags (needs ``rich-struct[html]``).
+
+    The page is converted to Markdown, so it gets the theme's Markdown styles;
+    CSS, scripts and anything else Markdown has no word for are dropped.
+    """
+    if html is None:
+        return print(None, theme=theme, **kwargs)
+    from markdownify import markdownify
+
+    # ponytail: regex drops what must not show as text; fine short of a <script> holding "</script>"
+    html = re.sub(r"(?is)<(head|script|style|template)\b.*?</\1\s*>|<!--.*?-->", "", html)
+    print_md(markdownify(html, heading_style="ATX", code_language_callback=_code_language), theme=theme, **kwargs)
 
 
 def print_syntax(
@@ -178,3 +204,44 @@ def print_table(
         return print(None, theme=theme, **kwargs)
     table = to_table(data, title=title, max_rows=max_rows, max_cols=max_cols)
     print(table, theme=theme, **kwargs)
+
+
+def print_list(
+    data: Any,
+    *,
+    wrap: bool = True,
+    head_tail_only: bool = False,
+    head_tail_size: int = 100,
+    theme: Optional[ThemeType] = None,
+    **kwargs: Any,
+) -> None:
+    """Print a list, array, numpy array or pandas Series as a sequence: ``[1, 2.5, 'text']``.
+
+    Long sequences wrap at the terminal width unless ``wrap=False``. With
+    ``head_tail_only``, only the first and last ``head_tail_size`` elements are
+    shown, around a highlighted "  ...  " gap.
+    """
+    if data is None:
+        return print(None, theme=theme, **kwargs)
+    if head_tail_size < 1:
+        raise ValueError("head_tail_size must be at least 1")
+    if not (hasattr(data, "tolist") or isinstance(data, (list, tuple))):
+        data = list(data)  # sets, generators...
+    parts = [data]
+    if head_tail_only and len(data) > 2 * head_tail_size:
+        rows = getattr(data, "iloc", data)  # pandas slices by position only through iloc
+        parts = [rows[:head_tail_size], rows[len(data) - head_tail_size :]]
+    highlight = _ObjectHighlighter()
+    text = Text().append("[", style="repr.brace")
+    for i, part in enumerate(parts):
+        if i:
+            text.append("  ...  ", style="bold reverse")
+        # tolist() turns numpy and pandas scalars into plain Python ones, also inside a plain list
+        values = part.tolist() if hasattr(part, "tolist") else part
+        values = (v.tolist() if hasattr(v, "tolist") else v for v in values)
+        text.append_text(highlight(", ".join(map(repr, values))))
+    text.append("]", style="repr.brace")
+    if not wrap:
+        # one line however long: the terminal, not rich, decides what to do with it
+        kwargs["width"] = max(text.cell_len, Console(file=kwargs.get("file")).width)
+    print(text, theme=theme, **kwargs)

@@ -1,15 +1,15 @@
 # rich-struct
 
-[`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
+[`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, HTML, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
 
 ```sh
-pip install rich-struct          # add [yaml] to dump objects with print_yaml
+pip install rich-struct          # add [yaml] to dump objects with print_yaml, [html] for print_html
 ```
 
 ```python
 from rich.markdown import Markdown
 from rich.theme import Theme
-from rich_struct import ThemeName, print, print_md, print_json, print_yaml, print_xml, print_obj, print_syntax, print_table
+from rich_struct import ThemeName, print, print_md, print_json, print_yaml, print_xml, print_obj, print_syntax, print_table, print_list, print_html
 
 print("[bold]hello[/bold]", {"a": 1})                 # drop-in rich.print, Midnight Slate by default
 print(Markdown("## Printing structs"), theme=ThemeName.DRACULA)
@@ -18,10 +18,12 @@ print_md("# Title\n\n```python\nprint('hi')\n```")
 print_json({"a": [1, 2, None]}, theme="Nord")         # enum value as a string works too
 print_yaml("a: 1\nb: [x, y]")
 print_xml("<a><b c='d'/></a>")
+print_html("<h1>Title</h1><p>Some <b>bold</b> text</p>")  # rendered, not its tags
 print_obj(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
 print(df)                                             # arrays and frames become tables in print too
+print_list(series, head_tail_only=True)               # [1, 2.5, 'text',  ...  98, 99]: list, array, Series
 
 print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword": "red"}))
 ```
@@ -85,6 +87,13 @@ One per kind of struct, each in a different theme. The [demo notebook](https://g
 Numbers are right-aligned, floats in a column share their decimals, and missing values are dimmed.
 Long data shows its head and tail around a `…` gap, and columns that don't fit the terminal width go into the gap as well.
 `to_table(data)` returns the renderable instead of printing it. numpy and pandas are not dependencies.
+
+## Lists
+
+`print_list(data, wrap=True, head_tail_only=False, head_tail_size=100)` prints a list, tuple, `array.array`, numpy array or pandas `Series` as one sequence: `[123, 1444.555, 'Test text', 4345.666]`.
+
+It wraps at the terminal width; `wrap=False` keeps it on one line.
+`head_tail_only=True` shows only the first and last `head_tail_size` elements, with a highlighted `  ...  ` between them.
 
 ## Themes
 
