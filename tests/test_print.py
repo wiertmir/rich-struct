@@ -75,7 +75,7 @@ def test_every_printer_accepts_none(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     for fn in helpers:
-        assert "3;38;2;196;181;253" in render(fn, None), fn.__name__  # italic #c4b5fd
+        assert "3;38;2;167;139;250" in render(fn, None), fn.__name__  # italic #a78bfa, same as JSON null
     assert "3;38;2;167;139;250" in render(rt.print_json, None)  # JSON null, italic #a78bfa
 
 
@@ -126,11 +126,11 @@ def test_objects_get_their_own_colours_and_background_in_midnight_slate(monkeypa
     page_bg, object_bg = "48;2;11;19;32", "48;2;15;23;42"  # #0b1320, #0f172a
     out = render(rt.print_obj, Point(1, "y"))
     assert object_bg in out and page_bg not in out
-    assert "38;2;163;194;242" in out and "38;2;34;211;238" in out  # property #a3c2f2, class #22d3ee
+    assert "38;2;156;188;255" in out and "1;38;2;137;180;250" in out  # property #9cbcff, class bold #89b4fa
     assert object_bg not in render(rt.print_md, "text") and object_bg not in render(rt.print_obj, 1, background=False)
     assert "48;2;46;52;64" in render(rt.print_obj, 1, theme="Nord")  # other themes: the page background
     # dict keys take the property colour here, and stay string-coloured in themes without repr.key
-    prop, slate_str, nord_str = "38;2;163;194;242", "38;2;163;230;53", "38;2;163;190;140"
+    prop, slate_str, nord_str = "38;2;156;188;255", "38;2;163;230;53", "38;2;163;190;140"
     out = render(rt.print_obj, {"key": "value"})
     assert f"{prop};48;2;15;23;42m'key'" in out and f"{slate_str};48;2;15;23;42m'value'" in out
     assert f"{nord_str};48;2;46;52;64m'key'" in render(rt.print_obj, {"key": "value"}, theme="Nord")
@@ -248,3 +248,14 @@ def test_print_html_renders_instead_of_showing_tags(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     assert "38;2;167;139;250" in render(rt.print_html, html)  # the code block is highlighted as Python
+
+
+def test_structs_stay_inline_among_other_arguments():
+    @dataclass
+    class S:
+        a: int
+        b: str
+
+    assert render(rt.print, "ready:", True) == "ready: True\n"
+    assert render(rt.print, "ready:", {"a": 1}, S(1, "x"), "!") == "ready: {'a': 1} S(a=1, b='x') !\n"
+    assert render(rt.print, {"a": 1, "b": 2}, width=8).count("\n") > 1  # alone, it still expands as before

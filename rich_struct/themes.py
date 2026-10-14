@@ -151,13 +151,13 @@ _OVERRIDES = {
         "json.null": "italic #a78bfa",
         # objects (print_obj)
         "repr.background": "on #0f172a",
-        "repr.attrib_name": "#a3c2f2",
-        "repr.key": "#a3c2f2",
-        "repr.call": "bold #22d3ee",
+        "repr.attrib_name": "#9cbcff",
+        "repr.key": "#9cbcff",
+        "repr.call": "bold #89b4fa",
         "repr.str": "#a3e635",
         "repr.number": "#fbbf24",
         "repr.number_complex": "#fbbf24",
-        "repr.none": "italic #c4b5fd",
+        "repr.none": "italic #a78bfa",
         "repr.bool_true": "italic #86efac",
         "repr.bool_false": "italic #86efac",
         "repr.tag_name": "#86efac",  # enum members print as <Role.ADMIN: 1>

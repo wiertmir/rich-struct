@@ -1,6 +1,7 @@
 """Themed drop-in extension of ``rich.print``."""
 
 import re
+import sys
 import xml.etree.ElementTree as ET
 from typing import IO, Any, Optional, Union
 
@@ -9,7 +10,7 @@ from rich.highlighter import ReprHighlighter
 from rich.json import JSON
 from rich.markdown import Markdown
 from rich.padding import Padding
-from rich.pretty import Pretty
+from rich.pretty import Pretty, is_expandable, pretty_repr
 from rich.protocol import is_renderable
 from rich.syntax import Syntax
 from rich.text import Text
@@ -87,6 +88,12 @@ def print(
     rich_theme = theme if isinstance(theme, Theme) else ThemeName(theme).theme
     code_theme = syntax_theme(rich_theme)
     objects = tuple(to_table(obj) if is_array(obj) else obj for obj in objects)
+    if len(objects) > 1:
+        # rich puts dicts, dataclasses... on their own lines; keep them inline among other arguments
+        objects = tuple(
+            ReprHighlighter()(pretty_repr(obj, max_width=sys.maxsize)) if is_expandable(obj) else obj
+            for obj in objects
+        )
     for obj in objects:
         if isinstance(obj, Markdown):
             obj.code_theme = syntax_theme(rich_theme, block=True)
@@ -102,7 +109,7 @@ def print(
             base += rich_theme.styles.get("repr.background", base)
         # fill whole lines: Padding expands renderables, justify pads plain text
         objects = tuple(
-            Padding(obj, 0) if is_renderable(obj) and not isinstance(obj, str) else obj
+            Padding(obj, 0) if is_renderable(obj) and not isinstance(obj, (str, Text)) else obj
             for obj in objects
         )
         kwargs.setdefault("justify", "left")
