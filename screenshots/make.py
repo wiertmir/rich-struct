@@ -1,4 +1,4 @@
-"""Regenerate the README screenshots: python screenshots/make.py (needs google-chrome, numpy, pandas)."""
+"""Regenerate the README screenshots: python screenshots/make.py (needs google-chrome, numpy, pandas, markdownify)."""
 
 import io
 import os
@@ -38,6 +38,24 @@ If you use Discord with friends or clubs, this is the most rewarding project.
 async def ping(ctx):
     await ctx.send("Pong!")  # replies to !ping
 ```
+"""
+
+HTML = """<html>
+<head><title>Release notes</title><style>p { color: red }</style></head>
+<body>
+<h1>Release notes</h1>
+<p>Version <b>0.4.0</b> adds <i>two</i> helpers. See the <a href="https://example.com/docs">documentation</a>.</p>
+<ul><li>HTML is rendered<ul><li>its tags are not shown</li></ul></li><li>CSS and scripts are dropped</li></ul>
+<pre><code class="language-python">def greet(name):
+    return f"Hello, {name}!"  # highlighted as Python</code></pre>
+<table>
+<tr><th>helper</th><th>input</th></tr>
+<tr><td>print_html</td><td>HTML</td></tr>
+<tr><td>print_list</td><td>sequences</td></tr>
+</table>
+<script>alert("never shown")</script>
+</body>
+</html>
 """
 
 JSON = {"name": "rich-struct", "version": 0.1, "tags": ["print", "theme"], "stable": False, "license": None}
@@ -110,6 +128,8 @@ RECORDS = [
 
 ARRAY = np.random.default_rng(0).normal(size=(4, 5))
 
+SEQUENCE = [123, 1444.555, "Test text", 4345.666, None, True, *np.random.default_rng(0).normal(size=200).round(3)]
+
 DF = pd.DataFrame(
     {
         "city": ["Kraków", "Oslo", "Lima"],
@@ -122,12 +142,15 @@ DF = pd.DataFrame(
 
 SHOTS = [  # file name, theme, call
     ("markdown", ThemeName.MIDNIGHT_SLATE, lambda **kw: rs.print_md(MARKDOWN, **kw)),
+    ("html", ThemeName.DRACULA, lambda **kw: rs.print_html(HTML, **kw)),
     ("json", ThemeName.NORD, lambda **kw: rs.print_json(JSON, **kw)),
     ("yaml", ThemeName.ONE_DARK_PRO, lambda **kw: rs.print_yaml(YAML, **kw)),
     ("xml", ThemeName.GITHUB_DARK, lambda **kw: rs.print_xml(XML, **kw)),
     ("object", ThemeName.CATPPUCCIN_MOCHA, lambda **kw: rs.print_obj(OBJECT, **kw)),
     ("code", ThemeName.ONE_LIGHT, lambda **kw: rs.print_syntax(CODE, "python", **kw)),
     ("list", ThemeName.CATPPUCCIN_LATTE, lambda **kw: rs.print_table(RECORDS, **kw)),
+    ("sequence", ThemeName.TOKYO_NIGHT,
+     lambda **kw: rs.print_list(SEQUENCE, head_tail_only=True, head_tail_size=16, **kw)),
     ("numpy", ThemeName.SOLARIZED_DARK, lambda **kw: rs.print_table(ARRAY, **kw)),
     ("dataframe", ThemeName.GITHUB_LIGHT, lambda **kw: rs.print_table(DF, title="Cities", **kw)),
     ("series", ThemeName.NIGHT_OWL, lambda **kw: rs.print_table(DF["area_km2"], **kw)),

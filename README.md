@@ -41,6 +41,10 @@ One per kind of struct, each in a different theme. The [demo notebook](https://g
 
 ![Markdown in the Midnight Slate theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/markdown.png)
 
+**HTML** — `print_html`, Dracula
+
+![HTML in the Dracula theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/html.png)
+
 **JSON** — `print_json`, Nord
 
 ![JSON in the Nord theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/json.png)
@@ -64,6 +68,10 @@ One per kind of struct, each in a different theme. The [demo notebook](https://g
 **Lists** — `print_table`, Catppuccin Latte
 
 ![Lists in the Catppuccin Latte theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/list.png)
+
+**Sequences** — `print_list` with `head_tail_only`, Tokyo Night
+
+![A sequence in the Tokyo Night theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/sequence.png)
 
 **NumPy arrays** — `print_table`, Solarized Dark
 
