@@ -126,7 +126,7 @@ def test_objects_get_their_own_colours_and_background_in_midnight_slate(monkeypa
     page_bg, object_bg = "48;2;11;19;32", "48;2;15;23;42"  # #0b1320, #0f172a
     out = render(rt.print_obj, Point(1, "y"))
     assert object_bg in out and page_bg not in out
-    assert "38;2;156;188;255" in out and "1;38;2;137;180;250" in out  # property #9cbcff, class bold #89b4fa
+    assert "38;2;156;188;255" in out and "1;38;2;78;201;176" in out  # property #9cbcff, class bold #4ec9b0
     assert object_bg not in render(rt.print_md, "text") and object_bg not in render(rt.print_obj, 1, background=False)
     assert "48;2;46;52;64" in render(rt.print_obj, 1, theme="Nord")  # other themes: the page background
     # dict keys take the property colour here, and stay string-coloured in themes without repr.key

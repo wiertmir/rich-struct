@@ -153,7 +153,7 @@ _OVERRIDES = {
         "repr.background": "on #0f172a",
         "repr.attrib_name": "#9cbcff",
         "repr.key": "#9cbcff",
-        "repr.call": "bold #89b4fa",
+        "repr.call": "bold #4ec9b0",
         "repr.str": "#a3e635",
         "repr.number": "#fbbf24",
         "repr.number_complex": "#fbbf24",
