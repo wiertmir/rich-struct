@@ -126,11 +126,11 @@ def test_objects_get_their_own_colours_and_background_in_midnight_slate(monkeypa
     page_bg, object_bg = "48;2;11;19;32", "48;2;15;23;42"  # #0b1320, #0f172a
     out = render(rt.print_obj, Point(1, "y"))
     assert object_bg in out and page_bg not in out
-    assert "38;2;156;188;255" in out and "1;38;2;78;201;176" in out  # property #9cbcff, class bold #4ec9b0
+    assert "38;2;163;194;242" in out and "1;38;2;121;192;255" in out  # property #a3c2f2 (as JSON keys), class bold #79c0ff (as GitHub Dark)
     assert object_bg not in render(rt.print_md, "text") and object_bg not in render(rt.print_obj, 1, background=False)
     assert "48;2;46;52;64" in render(rt.print_obj, 1, theme="Nord")  # other themes: the page background
     # dict keys take the property colour here, and stay string-coloured in themes without repr.key
-    prop, slate_str, nord_str = "38;2;156;188;255", "38;2;163;230;53", "38;2;163;190;140"
+    prop, slate_str, nord_str = "38;2;163;194;242", "38;2;163;230;53", "38;2;163;190;140"
     out = render(rt.print_obj, {"key": "value"})
     assert f"{prop};48;2;15;23;42m'key'" in out and f"{slate_str};48;2;15;23;42m'value'" in out
     assert f"{nord_str};48;2;46;52;64m'key'" in render(rt.print_obj, {"key": "value"}, theme="Nord")

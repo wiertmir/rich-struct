@@ -151,9 +151,9 @@ _OVERRIDES = {
         "json.null": "italic #a78bfa",
         # objects (print_obj)
         "repr.background": "on #0f172a",
-        "repr.attrib_name": "#9cbcff",
-        "repr.key": "#9cbcff",
-        "repr.call": "bold #4ec9b0",
+        "repr.attrib_name": "#a3c2f2",
+        "repr.key": "#a3c2f2",
+        "repr.call": "bold #79c0ff",
         "repr.str": "#a3e635",
         "repr.number": "#fbbf24",
         "repr.number_complex": "#fbbf24",
