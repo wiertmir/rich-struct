@@ -1,5 +1,6 @@
 """Themed drop-in extension of ``rich.print``."""
 
+import json
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -153,19 +154,46 @@ def print_syntax(
     print(Syntax(code, lexer, word_wrap=True), theme=theme, **kwargs)
 
 
-def print_json(data: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
-    """Print a JSON string, or any JSON-serialisable object."""
-    json = JSON(data) if isinstance(data, str) else JSON.from_data(data, default=str)
-    print(json, theme=theme, **kwargs)
+def _truncate_lists(data: Any, max_length: int) -> Any:
+    """``data`` with every list cut to ``max_length`` items, plus a ``"... +N"`` string for the rest."""
+    if isinstance(data, dict):
+        return {k: _truncate_lists(v, max_length) for k, v in data.items()}
+    if isinstance(data, (list, tuple)):
+        kept = [_truncate_lists(v, max_length) for v in data[:max_length]]
+        # ponytail: the marker is a JSON string, so it is coloured like one; patch the rendered Text if that bothers
+        return kept + [f"... +{len(data) - max_length}"] if len(data) > max_length else kept
+    return data
 
 
-def print_yaml(data: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
-    """Print a YAML string, or dump an object as YAML (needs ``rich-struct[yaml]``)."""
+def print_json(
+    data: Any, *, max_length: Optional[int] = None, theme: Optional[ThemeType] = None, **kwargs: Any
+) -> None:
+    """Print a JSON string, or any JSON-serialisable object.
+
+    With ``max_length``, lists longer than that show their first ``max_length``
+    items and a ``"... +N"`` entry counting the rest.
+    """
+    if max_length is not None:
+        data = _truncate_lists(json.loads(data) if isinstance(data, str) else data, max_length)
+    rendered = JSON(data) if isinstance(data, str) else JSON.from_data(data, default=str)
+    print(rendered, theme=theme, **kwargs)
+
+
+def print_yaml(
+    data: Any, *, max_length: Optional[int] = None, theme: Optional[ThemeType] = None, **kwargs: Any
+) -> None:
+    """Print a YAML string, or dump an object as YAML (needs ``rich-struct[yaml]``).
+
+    With ``max_length``, lists longer than that show their first ``max_length``
+    items and a ``... +N`` entry counting the rest (a string is parsed first).
+    """
     if data is None:
         return print(None, theme=theme, **kwargs)
-    if not isinstance(data, str):
+    if max_length is not None or not isinstance(data, str):
         import yaml
 
+        if max_length is not None:
+            data = _truncate_lists(yaml.safe_load(data) if isinstance(data, str) else data, max_length)
         data = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
     print_syntax(data.rstrip("\n"), "yaml", theme=theme, **kwargs)
 
@@ -186,11 +214,25 @@ def print_xml(
     print_syntax(data.rstrip("\n"), "xml", theme=theme, **kwargs)
 
 
-def print_obj(obj: Any, *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
-    """Pretty-print any Python object (dataclasses, dicts, nested structures...)."""
+def print_obj(
+    obj: Any,
+    *,
+    max_length: Optional[int] = None,
+    max_string: Optional[int] = None,
+    theme: Optional[ThemeType] = None,
+    **kwargs: Any,
+) -> None:
+    """Pretty-print any Python object (dataclasses, dicts, nested structures...).
+
+    ``max_length`` cuts containers (lists, dicts, sets...) to that many items,
+    followed by ``... +N``; ``max_string`` cuts long strings the same way.
+    """
     if obj is None:
         return print(None, theme=theme, **kwargs)
-    print(Pretty(obj, expand_all=True, highlighter=_ObjectHighlighter()), theme=theme, **kwargs)
+    pretty = Pretty(
+        obj, expand_all=True, highlighter=_ObjectHighlighter(), max_length=max_length, max_string=max_string
+    )
+    print(pretty, theme=theme, **kwargs)
 
 
 def print_table(

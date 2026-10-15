@@ -259,3 +259,20 @@ def test_structs_stay_inline_among_other_arguments():
     assert render(rt.print, "ready:", True) == "ready: True\n"
     assert render(rt.print, "ready:", {"a": 1}, S(1, "x"), "!") == "ready: {'a': 1} S(a=1, b='x') !\n"
     assert render(rt.print, {"a": 1, "b": 2}, width=8).count("\n") > 1  # alone, it still expands as before
+
+
+def test_long_lists_are_truncated():
+    obj = render(rt.print_obj, {"a": list(range(50)), "s": "x" * 30}, max_length=3, max_string=5)
+    assert "... +47" in obj and "'xxxxx'+25" in obj and "49" not in obj
+    for data in ({"a": list(range(50))}, '{"a": [0, 1, 2, 3, 4]}'):
+        out = render(rt.print_json, data, max_length=3)
+        assert '"... +' in out and "4" not in out.replace("+47", "").replace("+2", "")
+    assert render(rt.print_json, [1, 2], max_length=3) == render(rt.print_json, [1, 2])
+
+
+def test_long_yaml_lists_are_truncated():
+    pytest.importorskip("yaml")
+    for data in ({"a": list(range(50))}, "a: [0, 1, 2, 3, 4]"):
+        out = render(rt.print_yaml, data, max_length=3)
+        assert "... +" in out and "- 3" not in out
+    assert render(rt.print_yaml, "a: 1  # kept as written") == "a: 1  # kept as written\n"

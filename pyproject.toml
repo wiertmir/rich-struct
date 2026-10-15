@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rich-struct"
-version = "0.4.3"
-description = "rich.print with 25 themes (Midnight Slate, Tokyo Night, Dracula, Nord, ...) and print_md/html/json/yaml/xml/obj/table/list helpers"
+version = "0.5.0"
+description = "rich.print with 25 themes (Midnight Slate, Tokyo Night, Dracula, Nord, ...) and print_md/html/json/yaml/xml/obj/table/list helpers. Unofficial wrapper for rich, not part of the rich project"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"

@@ -2,6 +2,8 @@
 
 [`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, HTML, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
 
+> **Note:** rich-struct is not an official implementation or extension of `rich`, and it is not part of the [Textualize/rich](https://github.com/Textualize/rich) project or endorsed by it. It is an independent wrapper, a bridge that makes `rich` easier to use, especially in VS Code Jupyter notebooks.
+
 ```sh
 pip install rich-struct          # add [yaml] to dump objects with print_yaml, [html] for print_html
 ```
@@ -20,6 +22,8 @@ print_yaml("a: 1\nb: [x, y]")
 print_xml("<a><b c='d'/></a>")
 print_html("<h1>Title</h1><p>Some <b>bold</b> text</p>")  # rendered, not its tags
 print_obj(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
+print_obj(data, max_length=10, max_string=80)          # long containers/strings end in "... +N"
+print_json(data, max_length=10)                        # same for JSON and YAML lists (print_yaml)
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
 print(df)                                             # arrays and frames become tables in print too
