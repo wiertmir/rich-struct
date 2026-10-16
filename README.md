@@ -35,6 +35,9 @@ print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword":
 Every function takes `theme=`: a `ThemeName`, its string value, or a rich `Theme`.
 To change the theme for all of them at once, call `set_default_theme("Dracula")` (same accepted values; no argument resets to Midnight Slate).
 Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
+
+In VS Code notebooks rich shows output in its own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font plain `print()` gets instead; `False` switches back.
+
 `ThemeName.X.theme` gives you the underlying rich `Theme` to use with your own `Console`.
 
 ## Screenshots

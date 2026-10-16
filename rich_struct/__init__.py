@@ -6,6 +6,7 @@ import sys
 import xml.etree.ElementTree as ET
 from typing import IO, Any, Optional, Union
 
+import rich.jupyter
 from rich.console import Console
 from rich.highlighter import ReprHighlighter
 from rich.json import JSON
@@ -37,9 +38,24 @@ __all__ = [
     "print_yaml",
     "set_default_theme",
     "to_table",
+    "use_rich_font_override",
 ]
 
 ThemeType = Union[ThemeName, Theme, ThemeLiteral]
+
+_RICH_HTML_FORMAT = rich.jupyter.JUPYTER_HTML_FORMAT
+_VSCODE_HTML_FORMAT = re.sub(
+    r"font-family:([^\"]+)", r"font-family:var(--notebook-cell-output-font-family,\1)", _RICH_HTML_FORMAT, count=1
+)
+
+
+def use_rich_font_override(enabled: bool = True) -> None:
+    """In VS Code notebooks, show output in the font plain ``print()`` uses instead of rich's Menlo/DejaVu list.
+
+    Other Jupyter frontends keep rich's fonts either way. ``False`` goes back to rich's fonts everywhere.
+    """
+    # ponytail: patches a rich module constant; pass our own HTML to IPython.display if rich renames it
+    rich.jupyter.JUPYTER_HTML_FORMAT = _VSCODE_HTML_FORMAT if enabled else _RICH_HTML_FORMAT
 
 
 class _ObjectHighlighter(ReprHighlighter):

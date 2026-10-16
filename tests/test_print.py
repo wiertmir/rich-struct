@@ -276,3 +276,18 @@ def test_long_yaml_lists_are_truncated():
         out = render(rt.print_yaml, data, max_length=3)
         assert "... +" in out and "- 3" not in out
     assert render(rt.print_yaml, "a: 1  # kept as written") == "a: 1  # kept as written\n"
+
+
+def test_rich_font_override_is_opt_in():
+    import rich.jupyter
+
+    original = rich.jupyter.JUPYTER_HTML_FORMAT
+    assert "--notebook-cell-output-font-family" not in original
+    try:
+        rt.use_rich_font_override(True)
+        assert "font-family:var(--notebook-cell-output-font-family,Menlo," in rich.jupyter.JUPYTER_HTML_FORMAT
+        assert "monospace)" in rich.jupyter.JUPYTER_HTML_FORMAT
+        rt.use_rich_font_override(False)
+        assert rich.jupyter.JUPYTER_HTML_FORMAT == original
+    finally:
+        rt.use_rich_font_override(False)
