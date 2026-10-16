@@ -22,8 +22,8 @@ print_yaml("a: 1\nb: [x, y]")
 print_xml("<a><b c='d'/></a>")
 print_html("<h1>Title</h1><p>Some <b>bold</b> text</p>")  # rendered, not its tags
 print_obj(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
-print_obj(data, max_length=10, max_string=80)          # long containers/strings end in "... +N"
-print_json(data, max_length=10)                        # same for JSON and YAML lists (print_yaml)
+print_obj(data, max_list_length=10, max_string=80)    # long containers/strings end in "... +N"
+print_json(data, max_list_length=10)                  # same for JSON and YAML lists (print_yaml)
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
 print(df)                                             # arrays and frames become tables in print too
@@ -36,7 +36,7 @@ Every function takes `theme=`: a `ThemeName`, its string value, or a rich `Theme
 To change the theme for all of them at once, call `set_default_theme("Dracula")` (same accepted values; no argument resets to Midnight Slate).
 Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
 
-In VS Code notebooks rich shows output in its own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font plain `print()` gets instead; `False` switches back.
+In VS Code notebooks rich shows output in its own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font plain `print()` gets instead; `False` switches back. Lines stay closer together than in `print()` output: VS Code gives `print()` a noticeably looser line height, while rich deliberately uses a tight `line-height:normal` so table and panel borders join into solid lines. Copying `print()`'s spacing would leave gaps in those borders.
 
 `ThemeName.X.theme` gives you the underlying rich `Theme` to use with your own `Console`.
 

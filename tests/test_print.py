@@ -262,18 +262,18 @@ def test_structs_stay_inline_among_other_arguments():
 
 
 def test_long_lists_are_truncated():
-    obj = render(rt.print_obj, {"a": list(range(50)), "s": "x" * 30}, max_length=3, max_string=5)
+    obj = render(rt.print_obj, {"a": list(range(50)), "s": "x" * 30}, max_list_length=3, max_string=5)
     assert "... +47" in obj and "'xxxxx'+25" in obj and "49" not in obj
     for data in ({"a": list(range(50))}, '{"a": [0, 1, 2, 3, 4]}'):
-        out = render(rt.print_json, data, max_length=3)
+        out = render(rt.print_json, data, max_list_length=3)
         assert '"... +' in out and "4" not in out.replace("+47", "").replace("+2", "")
-    assert render(rt.print_json, [1, 2], max_length=3) == render(rt.print_json, [1, 2])
+    assert render(rt.print_json, [1, 2], max_list_length=3) == render(rt.print_json, [1, 2])
 
 
 def test_long_yaml_lists_are_truncated():
     pytest.importorskip("yaml")
     for data in ({"a": list(range(50))}, "a: [0, 1, 2, 3, 4]"):
-        out = render(rt.print_yaml, data, max_length=3)
+        out = render(rt.print_yaml, data, max_list_length=3)
         assert "... +" in out and "- 3" not in out
     assert render(rt.print_yaml, "a: 1  # kept as written") == "a: 1  # kept as written\n"
 
@@ -291,3 +291,28 @@ def test_rich_font_override_is_opt_in():
         assert rich.jupyter.JUPYTER_HTML_FORMAT == original
     finally:
         rt.use_rich_font_override(False)
+
+
+def test_rich_font_override_paints_notebook_background(monkeypatch):
+    import rich.console
+    import rich.jupyter
+
+    html = []
+    monkeypatch.setattr(rich.console, "_is_jupyter", lambda: True)
+    monkeypatch.setattr(rich.jupyter, "display", lambda segments, text: html.append(rich.jupyter._render_segments(segments)))
+    try:
+        rt.use_rich_font_override(True)
+        rt.print_md("# Title")
+        rt.print_md("# Title", background=False)
+    finally:
+        rt.use_rich_font_override(False)
+    rt.print_md("# Title")
+    assert '<pre style="background:#' in html[0]
+    assert "background:" not in html[1].split(">")[0]
+    assert "background:" not in html[2].split(">")[0]
+    assert "--notebook-cell-output-font-family" not in rich.jupyter.JUPYTER_HTML_FORMAT
+
+
+def test_print_md_keeps_h1_on_the_left():
+    out = render(rt.print_md, "# Title", width=40, background=False)
+    assert out.startswith("Title")

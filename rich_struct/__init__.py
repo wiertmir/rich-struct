@@ -7,13 +7,14 @@ import xml.etree.ElementTree as ET
 from typing import IO, Any, Optional, Union
 
 import rich.jupyter
-from rich.console import Console
+from rich.console import Console, ConsoleOptions, RenderResult
 from rich.highlighter import ReprHighlighter
 from rich.json import JSON
-from rich.markdown import Markdown
+from rich.markdown import Heading, Markdown
 from rich.padding import Padding
 from rich.pretty import Pretty, is_expandable, pretty_repr
 from rich.protocol import is_renderable
+from rich.style import Style
 from rich.syntax import Syntax
 from rich.text import Text
 from rich.theme import Theme
@@ -54,8 +55,13 @@ def use_rich_font_override(enabled: bool = True) -> None:
 
     Other Jupyter frontends keep rich's fonts either way. ``False`` goes back to rich's fonts everywhere.
     """
+    global _font_override
+    _font_override = enabled
     # ponytail: patches a rich module constant; pass our own HTML to IPython.display if rich renames it
     rich.jupyter.JUPYTER_HTML_FORMAT = _VSCODE_HTML_FORMAT if enabled else _RICH_HTML_FORMAT
+
+
+_font_override = False
 
 
 class _ObjectHighlighter(ReprHighlighter):
@@ -131,13 +137,37 @@ def print(
         )
         kwargs.setdefault("justify", "left")
         kwargs["style"] = base + console.get_style(kwargs.get("style") or "none")
-    console.print(*objects, sep=sep, end=end, **kwargs)
+    html_format = rich.jupyter.JUPYTER_HTML_FORMAT
+    bgcolor = kwargs["style"].bgcolor if isinstance(kwargs.get("style"), Style) else None
+    if _font_override and bgcolor:
+        # the VS Code font is taller than its line box, so rows leave gaps; paint them in the theme background
+        # ponytail: swaps a module global for one print; not thread-safe, fine for notebooks
+        rich.jupyter.JUPYTER_HTML_FORMAT = html_format.replace(
+            '<pre style="', f'<pre style="background:{bgcolor.get_truecolor().hex};', 1
+        )
+    try:
+        console.print(*objects, sep=sep, end=end, **kwargs)
+    finally:
+        rich.jupyter.JUPYTER_HTML_FORMAT = html_format
 
 
 def print_md(markdown: Optional[str], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
     if markdown is None:
         return print(None, theme=theme, **kwargs)
-    print(Markdown(markdown), theme=theme, **kwargs)
+    print(_Markdown(markdown), theme=theme, **kwargs)
+
+
+class _LeftHeading(Heading):
+    """A heading kept on the left; rich centres ``#`` headings."""
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        text = self.text.copy()
+        text.justify = "left"
+        yield text
+
+
+class _Markdown(Markdown):
+    elements = {**Markdown.elements, "heading_open": _LeftHeading}
 
 
 def _code_language(el: Any) -> str:
@@ -170,46 +200,46 @@ def print_syntax(
     print(Syntax(code, lexer, word_wrap=True), theme=theme, **kwargs)
 
 
-def _truncate_lists(data: Any, max_length: int) -> Any:
-    """``data`` with every list cut to ``max_length`` items, plus a ``"... +N"`` string for the rest."""
+def _truncate_lists(data: Any, max_list_length: int) -> Any:
+    """``data`` with every list cut to ``max_list_length`` items, plus a ``"... +N"`` string for the rest."""
     if isinstance(data, dict):
-        return {k: _truncate_lists(v, max_length) for k, v in data.items()}
+        return {k: _truncate_lists(v, max_list_length) for k, v in data.items()}
     if isinstance(data, (list, tuple)):
-        kept = [_truncate_lists(v, max_length) for v in data[:max_length]]
+        kept = [_truncate_lists(v, max_list_length) for v in data[:max_list_length]]
         # ponytail: the marker is a JSON string, so it is coloured like one; patch the rendered Text if that bothers
-        return kept + [f"... +{len(data) - max_length}"] if len(data) > max_length else kept
+        return kept + [f"... +{len(data) - max_list_length}"] if len(data) > max_list_length else kept
     return data
 
 
 def print_json(
-    data: Any, *, max_length: Optional[int] = None, theme: Optional[ThemeType] = None, **kwargs: Any
+    data: Any, *, max_list_length: Optional[int] = None, theme: Optional[ThemeType] = None, **kwargs: Any
 ) -> None:
     """Print a JSON string, or any JSON-serialisable object.
 
-    With ``max_length``, lists longer than that show their first ``max_length``
+    With ``max_list_length``, lists longer than that show their first ``max_list_length``
     items and a ``"... +N"`` entry counting the rest.
     """
-    if max_length is not None:
-        data = _truncate_lists(json.loads(data) if isinstance(data, str) else data, max_length)
+    if max_list_length is not None:
+        data = _truncate_lists(json.loads(data) if isinstance(data, str) else data, max_list_length)
     rendered = JSON(data) if isinstance(data, str) else JSON.from_data(data, default=str)
     print(rendered, theme=theme, **kwargs)
 
 
 def print_yaml(
-    data: Any, *, max_length: Optional[int] = None, theme: Optional[ThemeType] = None, **kwargs: Any
+    data: Any, *, max_list_length: Optional[int] = None, theme: Optional[ThemeType] = None, **kwargs: Any
 ) -> None:
     """Print a YAML string, or dump an object as YAML (needs ``rich-struct[yaml]``).
 
-    With ``max_length``, lists longer than that show their first ``max_length``
+    With ``max_list_length``, lists longer than that show their first ``max_list_length``
     items and a ``... +N`` entry counting the rest (a string is parsed first).
     """
     if data is None:
         return print(None, theme=theme, **kwargs)
-    if max_length is not None or not isinstance(data, str):
+    if max_list_length is not None or not isinstance(data, str):
         import yaml
 
-        if max_length is not None:
-            data = _truncate_lists(yaml.safe_load(data) if isinstance(data, str) else data, max_length)
+        if max_list_length is not None:
+            data = _truncate_lists(yaml.safe_load(data) if isinstance(data, str) else data, max_list_length)
         data = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
     print_syntax(data.rstrip("\n"), "yaml", theme=theme, **kwargs)
 
@@ -233,20 +263,20 @@ def print_xml(
 def print_obj(
     obj: Any,
     *,
-    max_length: Optional[int] = None,
+    max_list_length: Optional[int] = None,
     max_string: Optional[int] = None,
     theme: Optional[ThemeType] = None,
     **kwargs: Any,
 ) -> None:
     """Pretty-print any Python object (dataclasses, dicts, nested structures...).
 
-    ``max_length`` cuts containers (lists, dicts, sets...) to that many items,
+    ``max_list_length`` cuts containers (lists, dicts, sets...) to that many items,
     followed by ``... +N``; ``max_string`` cuts long strings the same way.
     """
     if obj is None:
         return print(None, theme=theme, **kwargs)
     pretty = Pretty(
-        obj, expand_all=True, highlighter=_ObjectHighlighter(), max_length=max_length, max_string=max_string
+        obj, expand_all=True, highlighter=_ObjectHighlighter(), max_length=max_list_length, max_string=max_string
     )
     print(pretty, theme=theme, **kwargs)
 
