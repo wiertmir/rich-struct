@@ -182,8 +182,8 @@ _OVERRIDES = {
         "markdown.s": "strike #9ca3af",
         "markdown.code": "#c2410c on #f1f5f9",
         "markdown.block_quote": "italic #15803d",
-        "markdown.item.bullet": "bold #b45309",
-        "markdown.item.number": "bold #b45309",
+        "markdown.item.bullet": "bold #7B3F00",
+        "markdown.item.number": "bold #7B3F00",
         "markdown.link": "underline #2563eb",
         "markdown.link_url": "underline #2563eb",  # rich styles link text with link_url
         "markdown.hr": "#cbd5e1",
