@@ -70,6 +70,31 @@ class _ObjectHighlighter(ReprHighlighter):
     # ponytail: any quoted string followed by ": " counts as a key; a real parser if that misfires
     highlights = [*ReprHighlighter.highlights, r"""(?P<key>(?<!\w)(?:'[^'\n]*'|"[^"\n]*"))(?=: )"""]
 
+
+# a quoted string in a repr; backslash escapes inside it don't end it
+_STRING_LITERAL = re.compile(r"""(?<![\\\w])b?(['"])(?:\\.|(?!\1).)*\1""")
+
+
+class _NewlineHighlighter(_ObjectHighlighter):
+    """Object highlighting, then ``\\n``, ``\\r\\n`` and ``\\r`` in strings become indented line breaks."""
+
+    def __call__(self, text: Union[str, Text]) -> Text:
+        text = super().__call__(text)  # highlight first: string colours don't span line breaks
+        plain = text.plain
+        result = text.blank_copy()
+        pos = 0
+        for literal in _STRING_LITERAL.finditer(plain):
+            pad = " " * (literal.start(1) - plain.rfind("\n", 0, literal.start()))
+            for escape in re.finditer(r"\\r\\n|\\.", literal.group()):
+                if escape.group() in ("\\n", "\\r\\n", "\\r"):
+                    start = literal.start() + escape.start()
+                    result.append_text(text[pos:start])
+                    result.append("\n" + pad)
+                    pos = literal.start() + escape.end()
+        result.append_text(text[pos:])
+        return result
+
+
 _default_theme: ThemeType = DEFAULT_THEME
 
 
@@ -265,6 +290,7 @@ def print_obj(
     *,
     max_list_length: Optional[int] = None,
     max_string: Optional[int] = None,
+    apply_newlines: bool = False,
     theme: Optional[ThemeType] = None,
     **kwargs: Any,
 ) -> None:
@@ -272,11 +298,14 @@ def print_obj(
 
     ``max_list_length`` cuts containers (lists, dicts, sets...) to that many items,
     followed by ``... +N``; ``max_string`` cuts long strings the same way.
+    With ``apply_newlines``, ``\\n``, ``\\r\\n`` or ``\\r`` in strings starts a new line,
+    indented under the opening quote.
     """
     if obj is None:
         return print(None, theme=theme, **kwargs)
+    highlighter = _NewlineHighlighter() if apply_newlines else _ObjectHighlighter()
     pretty = Pretty(
-        obj, expand_all=True, highlighter=_ObjectHighlighter(), max_length=max_list_length, max_string=max_string
+        obj, expand_all=True, highlighter=highlighter, max_length=max_list_length, max_string=max_string
     )
     print(pretty, theme=theme, **kwargs)
 

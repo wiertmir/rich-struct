@@ -270,6 +270,15 @@ def test_long_lists_are_truncated():
     assert render(rt.print_json, [1, 2], max_list_length=3) == render(rt.print_json, [1, 2])
 
 
+def test_apply_newlines():
+    data = {"text": "a\nb", "path": "C:\\new"}
+    assert "'a\\nb'" in render(rt.print_obj, data)
+    out = render(rt.print_obj, data, apply_newlines=True)
+    assert "    'text': 'a\n             b'," in out and "'C:\\\\new'" in out
+    out = render(rt.print_obj, ["a\r\nb\rc"], apply_newlines=True)
+    assert "'a\n     b\n     c'" in out and "\\r" not in out
+
+
 def test_long_yaml_lists_are_truncated():
     pytest.importorskip("yaml")
     for data in ({"a": list(range(50))}, "a: [0, 1, 2, 3, 4]"):

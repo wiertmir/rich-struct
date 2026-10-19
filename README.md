@@ -23,6 +23,7 @@ print_xml("<a><b c='d'/></a>")
 print_html("<h1>Title</h1><p>Some <b>bold</b> text</p>")  # rendered, not its tags
 print_obj(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
 print_obj(data, max_list_length=10, max_string=80)    # long containers/strings end in "... +N"
+print_obj(doc, apply_newlines=True)                   # "\n" in strings breaks the line instead
 print_json(data, max_list_length=10)                  # same for JSON and YAML lists (print_yaml)
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
