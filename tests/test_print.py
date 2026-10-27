@@ -15,6 +15,13 @@ from rich_struct import ThemeName
 from rich_struct.themes import _distance
 
 
+@pytest.fixture(autouse=True)
+def paint_background():
+    rt.use_background(True)  # most tests look at the painted output
+    yield
+    rt.use_background(None)  # back to auto
+
+
 def render(fn, *args, **kwargs) -> str:
     out = io.StringIO()
     fn(*args, file=out, **kwargs)
@@ -325,3 +332,25 @@ def test_rich_font_override_paints_notebook_background(monkeypatch):
 def test_print_md_keeps_h1_on_the_left():
     out = render(rt.print_md, "# Title", width=40, background=False)
     assert out.startswith("Title")
+
+
+def test_background_default_follows_environment(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    bg = "48;2;11;19;32"
+    rt.use_background(None)
+    assert bg not in render(rt.print, "hi")  # terminal: off by default
+    rt.use_background(True)
+    assert bg in render(rt.print, "hi")
+    assert bg not in render(rt.print, "hi", background=False)  # explicit argument wins
+    rt.use_background(False)
+    assert bg not in render(rt.print, "hi")
+    assert bg in render(rt.print, "hi", background=True)
+
+
+def test_print_err_shows_text_and_exceptions_in_error_style(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    red = "38;2;251;113;133"  # Midnight Slate repr.error red
+    assert "boom [x]" in render(rt.print_err, "boom [x]") and red in render(rt.print_err, "boom")
+    assert "ValueError: bad" in render(rt.print_err, ValueError("bad"))

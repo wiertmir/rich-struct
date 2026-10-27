@@ -31,6 +31,7 @@ __all__ = [
     "print_html",
     "print_json",
     "print_list",
+    "print_err",
     "print_md",
     "print_obj",
     "print_syntax",
@@ -39,6 +40,7 @@ __all__ = [
     "print_yaml",
     "set_default_theme",
     "to_table",
+    "use_background",
     "use_rich_font_override",
 ]
 
@@ -96,6 +98,16 @@ class _NewlineHighlighter(_ObjectHighlighter):
 
 
 _default_theme: ThemeType = DEFAULT_THEME
+_paint: Optional[bool] = None  # None: paint in notebooks only
+
+
+def use_background(paint: Optional[bool]) -> None:
+    """Choose whether print functions paint the theme's background when called without ``background=``.
+
+    Out of the box (and with ``None``) they paint in Jupyter notebooks and leave the terminal's own background alone.
+    """
+    global _paint
+    _paint = paint
 
 
 def set_default_theme(theme: ThemeType = DEFAULT_THEME) -> None:
@@ -115,7 +127,7 @@ def print(
     end: str = "\n",
     file: Optional[IO[str]] = None,
     theme: Optional[ThemeType] = None,
-    background: bool = True,
+    background: Optional[bool] = None,
     **kwargs: Any,
 ) -> None:
     """``rich.print`` with a theme.
@@ -124,8 +136,9 @@ def print(
     left out, it is the default theme (see :func:`set_default_theme`).
     ``Markdown`` and ``Syntax`` objects get their code colours from the theme too,
     and numpy arrays, pandas DataFrames and Series are shown as tables.
-    The theme's background is painted across the full terminal width unless
-    ``background=False`` (or the output has no colour, e.g. when piped to a file).
+    The theme's background is painted across the full width when ``background=True``;
+    left out, :func:`use_background` decides (by default: notebooks yes, terminals no).
+    Nothing is painted when the output has no colour, e.g. when piped to a file.
     Extra keyword arguments go to ``Console.print`` (``style``, ``justify``, ...).
 
     Every ``print_*`` helper accepts None and prints it as ``None`` in the theme's
@@ -151,6 +164,8 @@ def print(
     # width goes to the Console: Console.print can only narrow it, print_list needs it wider
     console = Console(theme=rich_theme, file=file, width=kwargs.pop("width", None))
     base = rich_theme.styles.get("background")
+    if background is None:
+        background = console.is_jupyter if _paint is None else _paint
     if background and base and console.color_system:
         if objects and all(isinstance(obj, Pretty) for obj in objects):
             # a theme may give objects their own background
@@ -174,6 +189,13 @@ def print(
         console.print(*objects, sep=sep, end=end, **kwargs)
     finally:
         rich.jupyter.JUPYTER_HTML_FORMAT = html_format
+
+
+def print_err(err: Union[str, BaseException], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
+    """Print an error message, or an exception as ``TypeName: message``, in the theme's ``repr.error`` style."""
+    msg = err if isinstance(err, str) else f"{type(err).__name__}: {err}"
+    kwargs.setdefault("style", "repr.error")
+    print(Text(msg), theme=theme, **kwargs)
 
 
 def print_md(markdown: Optional[str], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:

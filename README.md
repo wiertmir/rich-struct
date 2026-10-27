@@ -28,6 +28,7 @@ print_json(data, max_list_length=10)                  # same for JSON and YAML l
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
 print(df)                                             # arrays and frames become tables in print too
+print_err(ValueError("bad input"))                   # error text or exception, in the theme's error colour
 print_list(series, head_tail_only=True)               # [1, 2.5, 'text',  ...  98, 99]: list, array, Series
 
 print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword": "red"}))
@@ -131,6 +132,6 @@ It wraps at the terminal width; `wrap=False` keeps it on one line.
 
 Themes are built from each theme's colour palette, not ported token-by-token from the editor.
 
-Output is painted on the theme's background across the full terminal width. Pass `background=False` to keep the terminal's own background; nothing is painted or padded when the output has no colour (e.g. piped to a file). A custom `Theme` gets a background by defining a `background` style, e.g. `"background": "#c0caf5 on #1a1b26"`.
+Output is painted on the theme's background across the full width in Jupyter notebooks, and left on the terminal's own background in a console. Pass `background=True/False` to a call, or call `use_background(True/False)` once to change the default (`None` restores the automatic choice); nothing is painted or padded when the output has no colour (e.g. piped to a file). A custom `Theme` gets a background by defining a `background` style, e.g. `"background": "#c0caf5 on #1a1b26"`.
 
 Code colours come from `syntax.*` styles (`text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute`, `operator`); a custom `Theme` may override any of them, and may set `syntax.block` (e.g. `"on #111c2e"`) to shade code blocks inside Markdown, and `repr.background` to give `print_obj` output its own background.
