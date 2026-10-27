@@ -351,6 +351,6 @@ def test_background_default_follows_environment(monkeypatch):
 def test_print_err_shows_text_and_exceptions_in_error_style(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
-    red = "38;2;248;113;113"  # Midnight Slate repr.error red, #f87171
+    red = "38;2;217;83;79"  # Midnight Slate repr.error red, #d9534f
     assert "boom [x]" in render(rt.print_err, "boom [x]") and red in render(rt.print_err, "boom")
     assert "ValueError: bad" in render(rt.print_err, ValueError("bad"))
