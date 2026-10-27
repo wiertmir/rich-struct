@@ -126,7 +126,7 @@ _MUTED = {T.DARK_MODERN: "#6e7681", T.LIGHT_MODERN: "#767676", T.LIGHT_PLUS: "#7
 _OVERRIDES = {
     T.MIDNIGHT_SLATE: {
         "syntax.tag": "#7dd3fc",
-        "repr.error": "#d9534f",
+        "repr.error": "#C51E3A",
         "syntax.block": "on #111c2e",
         "markdown.h1": "bold #5eead4",
         "markdown.h2": "bold #22d3ee",
