@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rich-struct"
-version = "0.10.0"
+version = "0.10.1"
 description = "rich.print with 25 themes (Midnight Slate, Tokyo Night, Dracula, Nord, ...) and print_md/html/json/yaml/xml/obj/table/list helpers. Unofficial wrapper for rich, not part of the rich project"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -22,7 +22,7 @@ classifiers = [
 [project.optional-dependencies]
 yaml = ["pyyaml"]
 html = ["markdownify"]
-log = ["structlog"]
+log = ["structlog>=22"]
 
 [project.urls]
 Homepage = "https://github.com/wiertmir/rich-struct"

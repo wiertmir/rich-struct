@@ -23,7 +23,7 @@ import rich_struct
 from . import print as _print
 from . import ThemeName, ThemeType
 
-__all__ = ["DailyFileHandler", "configure", "get_logger"]
+__all__ = ["DailyFileHandler", "Logger", "configure", "get_logger"]
 
 # level -> theme style (the same styles print_obj uses); critical is also reversed
 _LEVELS = {
@@ -84,8 +84,9 @@ def _format(event: str, args: tuple, kwargs: Dict[str, Any]) -> List[Tuple[str, 
     return pieces
 
 
-class _Logger(structlog.BoundLoggerBase):
-    """Keeps the arguments raw (structlog's own loggers would ``%``-format them before we can colour them)."""
+class Logger(structlog.BoundLoggerBase):
+    """What :func:`get_logger` returns. ``event`` is a ``%`` or ``{}`` format string for ``*args``;
+    ``**kw`` become ``key=value`` fields. Binding, contextvars and the rest come from ``structlog``'s ``BoundLoggerBase``."""
 
     min_level = 0
 
@@ -94,23 +95,42 @@ class _Logger(structlog.BoundLoggerBase):
             self._proxy_to_logger(level, event, positional_args=args, _site=_site(sys._getframe(2)), **kw)
 
     def debug(self, event: str, *args: Any, **kw: Any) -> None:
+        """Log at DEBUG level."""
         self._log("debug", event, args, kw)
 
     def info(self, event: str, *args: Any, **kw: Any) -> None:
+        """Log at INFO level."""
         self._log("info", event, args, kw)
 
     def warning(self, event: str, *args: Any, **kw: Any) -> None:
+        """Log at WARNING level."""
         self._log("warning", event, args, kw)
 
     def error(self, event: str, *args: Any, **kw: Any) -> None:
+        """Log at ERROR level."""
         self._log("error", event, args, kw)
 
     def critical(self, event: str, *args: Any, **kw: Any) -> None:
+        """Log at CRITICAL level."""
         self._log("critical", event, args, kw)
 
     def exception(self, event: str, *args: Any, **kw: Any) -> None:
+        """Like ``error``, with the exception being handled and its traceback."""
         kw.setdefault("exc_info", True)
         self._log("error", event, args, kw)
+
+    # the same as structlog's, only typed to give back a Logger
+    def bind(self, **new_values: Any) -> "Logger":
+        """A copy of this logger with ``new_values`` added to every line as fields."""
+        return super().bind(**new_values)  # type: ignore[return-value]
+
+    def new(self, **new_values: Any) -> "Logger":
+        """A copy with the bound fields replaced by ``new_values``."""
+        return super().new(**new_values)  # type: ignore[return-value]
+
+    def unbind(self, *keys: str) -> "Logger":
+        """A copy without the bound fields ``keys``."""
+        return super().unbind(*keys)  # type: ignore[return-value]
 
 
 def _site(frame: Any) -> str:
@@ -252,7 +272,7 @@ def configure(
             structlog.processors.format_exc_info,
             _render(theme, message, console, handlers),
         ],
-        wrapper_class=type("Logger", (_Logger,), {"min_level": _NUMBERS[level.lower()]}),
+        wrapper_class=type("ConfiguredLogger", (Logger,), {"min_level": _NUMBERS[level.lower()]}),
         cache_logger_on_first_use=True,
     )
 
@@ -260,11 +280,15 @@ def configure(
 _configured = False
 
 
-def get_logger(*args: Any, **initial_values: Any) -> Any:
-    """A structlog logger; the first call configures defaults (:func:`configure`) unless you did already."""
+def get_logger(*args: Any, **initial_values: Any) -> Logger:
+    """A :class:`Logger`; the first call configures defaults (:func:`configure`) unless you did already.
+
+    ``initial_values`` are bound to it as fields. (It is structlog's lazy proxy underneath,
+    so any other attribute reaches structlog's own logger.)
+    """
     global _configured
     if not _configured:
         _configured = True
         if not structlog.is_configured():
             configure()
-    return structlog.get_logger(*args, **initial_values)
+    return structlog.get_logger(*args, **initial_values)  # type: ignore[no-any-return]

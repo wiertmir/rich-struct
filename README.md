@@ -1,11 +1,11 @@
 # rich-struct
 
-[`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, HTML, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series).
+[`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, HTML, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series), plus coloured [`structlog`](https://www.structlog.org) logging in the same themes.
 
 > **Note:** rich-struct is not an official implementation or extension of `rich`, and it is not part of the [Textualize/rich](https://github.com/Textualize/rich) project or endorsed by it. It is an independent wrapper, a bridge that makes `rich` easier to use, especially in VS Code Jupyter notebooks.
 
 ```sh
-pip install rich-struct          # add [yaml] to dump objects with print_yaml, [html] for print_html
+pip install rich-struct          # add [yaml] to dump objects with print_yaml, [html] for print_html, [log] for rich_struct.log
 ```
 
 ```python
@@ -111,6 +111,53 @@ Long data shows its head and tail around a `…` gap, and columns that don't fit
 
 It wraps at the terminal width; `wrap=False` keeps it on one line.
 `head_tail_only=True` shows only the first and last `head_tail_size` elements, with a highlighted `  ...  ` between them.
+
+## Logging
+
+`rich_struct.log` is coloured console logging (and, optionally, daily log files) on top of [`structlog`](https://www.structlog.org). It needs `pip install "rich-struct[log]"`; the rest of rich-struct doesn't.
+
+```python
+from rich_struct.log import get_logger
+
+log = get_logger()                       # console only, nothing to set up
+log.info("Processed %s in %03d ms.", position, elapsed)   # printf style...
+log.info("Processed {} in {:03d} ms.", position, elapsed) # ...or str.format style
+log.info("Saved", user="bob", retries=3)                  # fields: key=value
+log.exception("Caught {!r}", err)                         # adds the traceback
+```
+
+```
+12:33:30.238 INFO     Processed A-17 in 042 ms.
+12:33:30.239 ERROR    Caught ZeroDivisionError('division by zero')
+```
+
+On the console the level name is coloured by level (error is the brightest red), and every argument by its type (text, numbers, `True`/`False`, `None`, paths, exceptions, anything else), using the theme's colours, never bold. A message that doesn't match its arguments is still logged, with the arguments appended; logging never raises.
+
+`configure()` changes the defaults. It is optional, and call it before the first `get_logger()`:
+
+```python
+from rich_struct.log import configure
+
+configure(level="info")                  # debug (default), info, warning, error or critical
+configure(theme="Dracula")               # any rich-struct theme; default is the one from set_default_theme()
+configure(message="tint")                # colour of the message text, see below
+configure(console=False)                 # no console output
+configure(file=True)                     # also write logs/<script name>_yyyy_mm_dd.log
+configure(file="var/log", keep=14)       # another folder, keep 14 days
+configure(handler=my_handler)            # any logging.Handler also gets every line
+```
+
+`message=` picks the colour of the message text: `"plain"` (default, the theme's text colour), `"level"` (the level's colour) or `"tint"` (the text colour with a hint of the level's). Fields keep their own colours either way.
+
+`file=True` writes the same lines without colours, starting with the local date, time and UTC offset, and adding the logging `` `module.Class` `` (the class when the call is inside a method):
+
+```
+2026-10-29 12:33:30.238+09:00 INFO     `__main__.Job` Processed A-17 in 042 ms.
+```
+
+A new file starts at local midnight and only the newest `keep` (7) files stay. On free-threaded Python, both outputs also show the thread name, `[worker-1]`, after the level.
+
+`configure()` is `structlog.configure()` underneath, so it applies to every structlog logger in the process. `examples/log_demo.py` in the repository shows it all.
 
 ## Themes
 
