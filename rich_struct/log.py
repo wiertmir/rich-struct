@@ -1,12 +1,16 @@
 """Coloured console logging on top of ``structlog``: ``log.info("Took {:03d} ms", ms)`` or ``log.info("Took %03d ms", ms)``."""
 
 import colorsys
+import logging
+import os
 import re
 import string
 import sys
+import threading
+from datetime import date, datetime
 from numbers import Number
-from pathlib import PurePath
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path, PurePath
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import structlog
 from rich.color import Color, ColorTriplet
@@ -19,7 +23,7 @@ import rich_struct
 from . import print as _print
 from . import ThemeName, ThemeType
 
-__all__ = ["configure", "get_logger"]
+__all__ = ["DailyFileHandler", "configure", "get_logger"]
 
 # level -> theme style (the same styles print_obj uses); critical is also reversed
 _LEVELS = {
@@ -87,7 +91,7 @@ class _Logger(structlog.BoundLoggerBase):
 
     def _log(self, level: str, event: str, args: tuple, kw: Dict[str, Any]) -> None:
         if _NUMBERS[level] >= self.min_level:
-            self._proxy_to_logger(level, event, positional_args=args, **kw)
+            self._proxy_to_logger(level, event, positional_args=args, _site=_site(sys._getframe(2)), **kw)
 
     def debug(self, event: str, *args: Any, **kw: Any) -> None:
         self._log("debug", event, args, kw)
@@ -109,6 +113,18 @@ class _Logger(structlog.BoundLoggerBase):
         self._log("error", event, args, kw)
 
 
+def _site(frame: Any) -> str:
+    """``module`` or ``module.Class`` of the code that logged (the class of its ``self`` / ``cls`` argument)."""
+    code = frame.f_code
+    first = frame.f_locals.get(code.co_varnames[0]) if code.co_argcount and code.co_varnames[0] in ("self", "cls") else None
+    cls = first if isinstance(first, type) else type(first)
+    return frame.f_globals.get("__name__", "?") + (f".{cls.__name__}" if first is not None else "")
+
+
+def _free_threaded() -> bool:
+    return not getattr(sys, "_is_gil_enabled", lambda: True)()
+
+
 def _blend(a: Style, b: Style, share: float) -> Style:
     """The colour of ``a`` moved ``share`` of the way to the colour of ``b``."""
     (r1, g1, b1), (r2, g2, b2) = (s.color.get_truecolor() for s in (a, b))
@@ -123,13 +139,43 @@ def _brighten(style: Style) -> Style:
     return Style(color=Color.from_triplet(ColorTriplet(*(round(c * 255) for c in rgb))))
 
 
-def _render(theme: Optional[ThemeType], message: str):
+class DailyFileHandler(logging.FileHandler):
+    """Writes to ``<folder>/<name>_yyyy_mm_dd.log``: a new file on the first line logged after local midnight,
+    and only the newest ``keep`` files (days) are left."""
+
+    def __init__(self, folder: Union[str, "os.PathLike[str]"], name: str, keep: int = 7):
+        self.folder, self.prefix, self.keep = Path(folder), name, keep
+        self.folder.mkdir(parents=True, exist_ok=True)
+        super().__init__(self._path(), encoding="utf-8")
+        self._prune()
+
+    def _path(self) -> str:
+        return os.path.abspath(self.folder / f"{self.prefix}_{date.today():%Y_%m_%d}.log")
+
+    def _prune(self) -> None:
+        for old in sorted(self.folder.glob(f"{self.prefix}_*.log"))[: -self.keep]:
+            old.unlink()
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if (path := self._path()) != self.baseFilename:  # the day changed
+            if self.stream:
+                self.stream.close()
+                self.stream = None  # FileHandler.emit reopens it, at the new path
+            self.baseFilename = path
+            super().emit(record)
+            self._prune()  # after emitting, so the new file counts
+        else:
+            super().emit(record)
+
+
+def _render(theme: Optional[ThemeType], message: str, console: bool, handlers: List[logging.Handler]):
     def render(_logger: Any, method: str, event_dict: Dict[str, Any]) -> None:
         event_dict = dict(event_dict)
         event = str(event_dict.pop("event", ""))
         args = event_dict.pop("positional_args", ())
         stamp, level = event_dict.pop("timestamp", ""), event_dict.pop("level", method)
         exc = event_dict.pop("exception", "")
+        site = event_dict.pop("_site", "")
         try:
             pieces = _format(event, args, event_dict)
         except (TypeError, ValueError, LookupError, AttributeError):  # logging must not crash the program
@@ -147,6 +193,9 @@ def _render(theme: Optional[ThemeType], message: str):
         line = Text()
         line.append(f"{stamp[:-3]} ", get("repr.ellipsis"))
         line.append(f"{level.upper():<9}", base + Style(reverse=level == "critical"))
+        if _free_threaded():  # threads run in parallel only then, so that is when it matters which one logged
+            line.append(f"[{threading.current_thread().name}] ", get("repr.ellipsis"))
+        cut = len(line)
         for text, style in pieces:
             line.append(text, get(style) if style else body)
         for key, value in event_dict.items():
@@ -155,27 +204,53 @@ def _render(theme: Optional[ThemeType], message: str):
             line.append(str(value), get(_style(value)))
         if exc:
             line.append("\n" + exc, base)
-        _print(line, file=sys.stderr, theme=theme)
+        if console:
+            _print(line, file=sys.stderr, theme=theme)
+        if handlers:  # same line without colours, dated with local time and UTC offset
+            when = datetime.now().astimezone().isoformat(sep=" ", timespec="milliseconds")
+            shown = len(stamp) - 3 + 1  # stamp is HH:MM:SS.ffffff; the line shows HH:MM:SS.fff and a space
+            plain = f"{when} {line.plain[shown:cut]}`{site}` {line.plain[cut:]}"
+            record = logging.makeLogRecord({"msg": plain, "levelno": _NUMBERS[level] * 10 or 10})
+            for handler in handlers:
+                handler.handle(record)
         raise structlog.DropEvent  # ponytail: printing here; the default logger would print a returned string itself
 
     return render
 
 
-def configure(level: str = "debug", theme: Optional[ThemeType] = None, message: str = "plain") -> None:
-    """Send ``structlog`` output to stderr, with arguments coloured by type and the level name by level.
+def configure(
+    level: str = "debug",
+    theme: Optional[ThemeType] = None,
+    message: str = "plain",
+    *,
+    console: bool = True,
+    file: Union[bool, str, "os.PathLike[str]"] = False,
+    keep: int = 7,
+    handler: Optional[logging.Handler] = None,
+) -> None:
+    """Set up ``structlog``: arguments coloured by type and the level name by level, on stderr.
 
     ``message`` colours the rest of the message: ``"plain"`` (the theme's text colour), ``"level"``
     (the level's colour) or ``"tint"`` (the text colour with a hint of the level's).
+    ``console=False`` turns the console output off.
+    ``file=True`` also writes uncoloured lines to ``logs/<script name>_yyyy_mm_dd.log``, with local time and UTC offset,
+    thread name (free-threaded Python only) and ``module.Class``; a new file every local midnight, the last ``keep``
+    days kept. Give a folder instead of ``True`` to write elsewhere.
+    ``handler`` is any other ``logging.Handler`` that should get the same lines.
 
     Affects every structlog logger in the process (``structlog.configure`` is global).
     """
+    handlers = [handler] if handler else []
+    if file:
+        script = getattr(sys.modules["__main__"], "__file__", None)
+        handlers.append(DailyFileHandler("logs" if file is True else file, Path(script).stem if script else "app", keep))
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="%H:%M:%S.%f", utc=False),
             structlog.processors.format_exc_info,
-            _render(theme, message),
+            _render(theme, message, console, handlers),
         ],
         wrapper_class=type("Logger", (_Logger,), {"min_level": _NUMBERS[level.lower()]}),
         cache_logger_on_first_use=True,

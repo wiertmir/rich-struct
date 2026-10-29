@@ -2,11 +2,16 @@
 
 from pathlib import Path
 
-from rich_struct.log import get_logger
+from rich_struct.log import configure, get_logger
+
+# Console logging is on by default; this also writes logs/log_demo_yyyy_mm_dd.log (a new file daily, last 7 kept).
+# configure(console=False) would turn the console off; without configure() only the console is used.
+configure(file=True)
 
 log = get_logger()
 position, elapsed = "A-17", 42
 
+log.info("Module name: {}", __name__)
 log.debug("Debug: started with %s and %d", Path("/tmp/data.csv"), 3)
 log.info("Processed %s in %03d ms.", position, elapsed)
 log.info("Processed {} in {:03d} ms.", position, elapsed)
