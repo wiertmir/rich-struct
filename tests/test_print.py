@@ -82,8 +82,8 @@ def test_every_printer_accepts_none(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     for fn in helpers:
-        assert "3;38;2;167;139;250" in render(fn, None), fn.__name__  # italic #a78bfa, same as JSON null
-    assert "3;38;2;167;139;250" in render(rt.print_json, None)  # JSON null, italic #a78bfa
+        assert "3;38;2;133;176;154" in render(fn, None), fn.__name__  # italic #85B09A, same as JSON null
+    assert "3;38;2;133;176;154" in render(rt.print_json, None)  # JSON null, italic #85B09A
 
 
 def test_set_default_theme_changes_every_printer(monkeypatch):
