@@ -142,6 +142,7 @@ configure(level="info")                  # debug (default), info, warning, error
 configure(theme="Dracula")               # any rich-struct theme; default is the one from set_default_theme()
 configure(message="tint")                # colour of the message text, see below
 configure(console=False)                 # no console output
+configure(thread=False)                  # leave the thread name out of the lines
 configure(file=True)                     # also write logs/<script name>_yyyy_mm_dd.log
 configure(file="var/log", keep=14)       # another folder, keep 14 days
 configure(handler=my_handler)            # any logging.Handler also gets every line
@@ -152,10 +153,10 @@ configure(handler=my_handler)            # any logging.Handler also gets every l
 `file=True` writes the same lines without colours, starting with the local date, time and UTC offset, and adding the logging `` `module.Class` `` (the class when the call is inside a method):
 
 ```
-2026-10-29 12:33:30.238+09:00 INFO     `__main__.Job` Processed A-17 in 042 ms.
+2026-10-29 12:33:30.238+09:00 INFO     [MainThread] `__main__.Job` Processed A-17 in 042 ms.
 ```
 
-A new file starts at local midnight and only the newest `keep` (7) files stay. On free-threaded Python, both outputs also show the thread name, `[worker-1]`, after the level.
+A new file starts at local midnight and only the newest `keep` (7) files stay. Both outputs also show the thread name, `[worker-1]`, after the level (`thread=False` turns that off).
 
 `configure()` is `structlog.configure()` underneath, so it applies to every structlog logger in the process. `examples/log_demo.py` in the repository shows it all.
 

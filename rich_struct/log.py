@@ -141,10 +141,6 @@ def _site(frame: Any) -> str:
     return frame.f_globals.get("__name__", "?") + (f".{cls.__name__}" if first is not None else "")
 
 
-def _free_threaded() -> bool:
-    return not getattr(sys, "_is_gil_enabled", lambda: True)()
-
-
 def _blend(a: Style, b: Style, share: float) -> Style:
     """The colour of ``a`` moved ``share`` of the way to the colour of ``b``."""
     (r1, g1, b1), (r2, g2, b2) = (s.color.get_truecolor() for s in (a, b))
@@ -188,7 +184,7 @@ class DailyFileHandler(logging.FileHandler):
             super().emit(record)
 
 
-def _render(theme: Optional[ThemeType], message: str, console: bool, handlers: List[logging.Handler]):
+def _render(theme: Optional[ThemeType], message: str, console: bool, thread: bool, handlers: List[logging.Handler]):
     def render(_logger: Any, method: str, event_dict: Dict[str, Any]) -> None:
         event_dict = dict(event_dict)
         event = str(event_dict.pop("event", ""))
@@ -213,7 +209,7 @@ def _render(theme: Optional[ThemeType], message: str, console: bool, handlers: L
         line = Text()
         line.append(f"{stamp[:-3]} ", get("repr.ellipsis"))
         line.append(f"{level.upper():<9}", base + Style(reverse=level == "critical"))
-        if _free_threaded():  # threads run in parallel only then, so that is when it matters which one logged
+        if thread:
             line.append(f"[{threading.current_thread().name}] ", get("repr.ellipsis"))
         cut = len(line)
         for text, style in pieces:
@@ -244,6 +240,7 @@ def configure(
     message: str = "plain",
     *,
     console: bool = True,
+    thread: bool = True,
     file: Union[bool, str, "os.PathLike[str]"] = False,
     keep: int = 7,
     handler: Optional[logging.Handler] = None,
@@ -253,8 +250,9 @@ def configure(
     ``message`` colours the rest of the message: ``"plain"`` (the theme's text colour), ``"level"``
     (the level's colour) or ``"tint"`` (the text colour with a hint of the level's).
     ``console=False`` turns the console output off.
+    ``thread=False`` leaves the thread name, ``[MainThread]``, out of the lines.
     ``file=True`` also writes uncoloured lines to ``logs/<script name>_yyyy_mm_dd.log``, with local time and UTC offset,
-    thread name (free-threaded Python only) and ``module.Class``; a new file every local midnight, the last ``keep``
+    thread name and ``module.Class``; a new file every local midnight, the last ``keep``
     days kept. Give a folder instead of ``True`` to write elsewhere.
     ``handler`` is any other ``logging.Handler`` that should get the same lines.
 
@@ -270,7 +268,7 @@ def configure(
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="%H:%M:%S.%f", utc=False),
             structlog.processors.format_exc_info,
-            _render(theme, message, console, handlers),
+            _render(theme, message, console, thread, handlers),
         ],
         wrapper_class=type("ConfiguredLogger", (Logger,), {"min_level": _NUMBERS[level.lower()]}),
         cache_logger_on_first_use=True,

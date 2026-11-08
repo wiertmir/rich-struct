@@ -5,11 +5,6 @@ pytest.importorskip("structlog")
 from rich_struct.log import configure, get_logger
 
 
-@pytest.fixture(autouse=True)
-def gil_build(monkeypatch):
-    monkeypatch.setattr("rich_struct.log._free_threaded", lambda: False)  # same output on every Python
-
-
 def lines(capsys):
     return capsys.readouterr().err.splitlines()
 
@@ -19,7 +14,7 @@ def test_both_styles(capsys, monkeypatch, fmt):
     monkeypatch.setenv("NO_COLOR", "1")
     configure()
     get_logger().info(fmt, "x", 7)
-    assert lines(capsys)[0].endswith("INFO     Took x in 007 ms.")
+    assert lines(capsys)[0].endswith("INFO     [MainThread] Took x in 007 ms.")
 
 
 def test_level_and_bad_args(capsys, monkeypatch):
@@ -28,7 +23,7 @@ def test_level_and_bad_args(capsys, monkeypatch):
     log = get_logger()
     log.info("hidden")
     log.error("bad %d", "x")  # must not raise
-    assert lines(capsys)[0].endswith("ERROR    bad %d 'x'")
+    assert lines(capsys)[0].endswith("ERROR    [MainThread] bad %d 'x'")
 
 
 def test_handler_gets_plain_line_with_utc_offset(capsys, tmp_path):
@@ -40,16 +35,26 @@ def test_handler_gets_plain_line_with_utc_offset(capsys, tmp_path):
     get_logger().info("Took {} ms", 7)
     handler.close()
     assert re.fullmatch(
-        r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d INFO     `[\w.]+` Took 7 ms\n", (tmp_path / "a.log").read_text()
+        r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d INFO     \[MainThread\] `[\w.]+` Took 7 ms\n", (tmp_path / "a.log").read_text()
     )
 
 
-def test_thread_name_when_free_threaded(capsys, monkeypatch):
+def test_thread_name_is_always_logged(capsys, monkeypatch):
+    import threading
+
     monkeypatch.setenv("NO_COLOR", "1")
-    monkeypatch.setattr("rich_struct.log._free_threaded", lambda: True)
     configure()
+    worker = threading.Thread(target=lambda: get_logger().info("hi"), name="worker-1")
+    worker.start()
+    worker.join()
+    assert lines(capsys)[0].endswith("INFO     [worker-1] hi")
+
+
+def test_thread_name_can_be_turned_off(capsys, monkeypatch):
+    monkeypatch.setenv("NO_COLOR", "1")
+    configure(thread=False)
     get_logger().info("hi")
-    assert lines(capsys)[0].endswith("INFO     [MainThread] hi")
+    assert lines(capsys)[0].endswith("INFO     hi")
 
 
 class Job:
@@ -64,7 +69,7 @@ def test_file_line_has_module_and_class(tmp_path):
     configure(handler=handler)
     Job().run()
     handler.close()
-    assert (tmp_path / "a.log").read_text().endswith(f"INFO     `{__name__}.Job` x\n")
+    assert (tmp_path / "a.log").read_text().endswith(f"INFO     [MainThread] `{__name__}.Job` x\n")
 
 
 def test_file_option_writes_dated_file(tmp_path, monkeypatch):
@@ -75,7 +80,7 @@ def test_file_option_writes_dated_file(tmp_path, monkeypatch):
     get_logger().info("hi")
     (path,) = (tmp_path / "logs").glob("*.log")
     assert path.name.endswith(f"_{date.today():%Y_%m_%d}.log")
-    assert path.read_text().endswith("INFO     `test_log` hi\n")
+    assert path.read_text().endswith("INFO     [MainThread] `test_log` hi\n")
 
 
 def test_console_off_and_file_off_by_default(capsys, tmp_path, monkeypatch):
