@@ -141,6 +141,10 @@ def _site(frame: Any) -> str:
     return frame.f_globals.get("__name__", "?") + (f".{cls.__name__}" if first is not None else "")
 
 
+def _free_threaded() -> bool:
+    return not getattr(sys, "_is_gil_enabled", lambda: True)()
+
+
 def _blend(a: Style, b: Style, share: float) -> Style:
     """The colour of ``a`` moved ``share`` of the way to the colour of ``b``."""
     (r1, g1, b1), (r2, g2, b2) = (s.color.get_truecolor() for s in (a, b))
@@ -240,7 +244,7 @@ def configure(
     message: str = "plain",
     *,
     console: bool = True,
-    thread: bool = True,
+    thread: Optional[bool] = None,
     file: Union[bool, str, "os.PathLike[str]"] = False,
     keep: int = 7,
     handler: Optional[logging.Handler] = None,
@@ -250,9 +254,10 @@ def configure(
     ``message`` colours the rest of the message: ``"plain"`` (the theme's text colour), ``"level"``
     (the level's colour) or ``"tint"`` (the text colour with a hint of the level's).
     ``console=False`` turns the console output off.
-    ``thread=False`` leaves the thread name, ``[MainThread]``, out of the lines.
+    ``thread`` puts the thread name, ``[MainThread]``, in the lines; by default only on free-threaded Python,
+    where threads really run in parallel.
     ``file=True`` also writes uncoloured lines to ``logs/<script name>_yyyy_mm_dd.log``, with local time and UTC offset,
-    thread name and ``module.Class``; a new file every local midnight, the last ``keep``
+    thread name (if ``thread``) and ``module.Class``; a new file every local midnight, the last ``keep``
     days kept. Give a folder instead of ``True`` to write elsewhere.
     ``handler`` is any other ``logging.Handler`` that should get the same lines.
 
@@ -268,7 +273,7 @@ def configure(
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="%H:%M:%S.%f", utc=False),
             structlog.processors.format_exc_info,
-            _render(theme, message, console, thread, handlers),
+            _render(theme, message, console, _free_threaded() if thread is None else thread, handlers),
         ],
         wrapper_class=type("ConfiguredLogger", (Logger,), {"min_level": _NUMBERS[level.lower()]}),
         cache_logger_on_first_use=True,
