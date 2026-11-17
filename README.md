@@ -131,7 +131,7 @@ log.exception("Caught {!r}", err)                         # adds the traceback
 12:33:30.239 ERROR    Caught ZeroDivisionError('division by zero')
 ```
 
-On the console the level name is coloured by level (error is the brightest red), and every argument by its type (text, numbers, `True`/`False`, `None`, paths, exceptions, anything else), using the theme's colours, never bold. A message that doesn't match its arguments is still logged, with the arguments appended; logging never raises.
+On the console the level name is coloured by level (error is the brightest red), and every argument by its type (text, numbers, `True`/`False`, `None`, paths, exceptions, anything else), using the theme's colours, never bold. A `datetime` argument or field (without a format spec) is shown to the millisecond with its own UTC offset, not converted to local time, so you see the zone it came from: `2026-10-29 12:33:30.238+09:00`. A message that doesn't match its arguments is still logged, with the arguments appended; logging never raises.
 
 In Jupyter notebooks (VS Code, JupyterLab) consecutive log lines go into a single block, in the theme's background with a border and an accent bar, and the block grows as the cell runs, instead of one output per line with gaps between them. Anything else the cell outputs in between (a `print`, a plot) ends the block, so logs stay in order with the rest of the output.
 

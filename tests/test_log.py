@@ -22,6 +22,17 @@ def test_both_styles(capsys, monkeypatch, fmt):
     assert lines(capsys)[0].endswith("INFO     Took x in 007 ms.")
 
 
+@pytest.mark.parametrize("fmt", ["Built {}", "Built %s"])
+def test_datetime_keeps_its_own_offset(capsys, monkeypatch, fmt):
+    from datetime import datetime, timedelta, timezone
+
+    monkeypatch.setenv("NO_COLOR", "1")
+    configure()
+    when = datetime(2026, 1, 2, 3, 4, 5, 678901, tzinfo=timezone(timedelta(hours=9)))
+    get_logger().info(fmt, when, at=1)
+    assert lines(capsys)[0].endswith("INFO     Built 2026-01-02 03:04:05.678+09:00 at=1")
+
+
 def test_level_and_bad_args(capsys, monkeypatch):
     monkeypatch.setenv("NO_COLOR", "1")
     configure("warning")

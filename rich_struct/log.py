@@ -56,6 +56,15 @@ def _style(value: Any) -> str:
     return "repr.path"
 
 
+def _when(value: datetime) -> str:
+    """Date, time to the millisecond and the datetime's own UTC offset (none if naive)."""
+    return value.isoformat(sep=" ", timespec="milliseconds")
+
+
+def _str(value: Any) -> str:
+    return _when(value) if isinstance(value, datetime) else str(value)
+
+
 def _format(event: str, args: tuple, kwargs: Dict[str, Any]) -> List[Tuple[str, Optional[str]]]:
     """Split the message into ``(text, style)`` pieces; style is None for the message's own text and ``%%``."""
     pieces: List[Tuple[str, Optional[str]]] = []
@@ -65,6 +74,9 @@ def _format(event: str, args: tuple, kwargs: Dict[str, Any]) -> List[Tuple[str, 
             pieces.append((event[pos : m.start()], None))
             if m.group() == "%%":
                 pieces.append(("%", None))
+            elif m.group() == "%s":
+                pieces.append((_str(args[n]), _style(args[n])))
+                n += 1
             else:
                 pieces.append((m.group() % (args[n],), _style(args[n])))
                 n += 1
@@ -80,7 +92,7 @@ def _format(event: str, args: tuple, kwargs: Dict[str, Any]) -> List[Tuple[str, 
                 if field == "":
                     field, auto = str(auto), auto + 1
                 value, _ = fmt.get_field(field, args, kwargs)
-                text = fmt.format_field(fmt.convert_field(value, conv), spec)
+                text = _str(value) if not spec and not conv else fmt.format_field(fmt.convert_field(value, conv), spec)
                 pieces.append((text, _style(value)))
     else:
         pieces.append((event, None))
@@ -280,7 +292,7 @@ def _render(theme: Optional[ThemeType], message: str, console: bool, thread: boo
         for key, value in event_dict.items():
             line.append(f" {key}", get("repr.attrib_name"))
             line.append("=", get("repr.attrib_equal"))
-            line.append(str(value), get(_style(value)))
+            line.append(_str(value), get(_style(value)))
         if exc:
             line.append("\n" + exc, base)
         if console:
@@ -289,7 +301,7 @@ def _render(theme: Optional[ThemeType], message: str, console: bool, thread: boo
             else:
                 _print(line, file=sys.stderr, theme=theme)
         if handlers:  # same line without colours, dated with local time and UTC offset
-            when = datetime.now().astimezone().isoformat(sep=" ", timespec="milliseconds")
+            when = _when(datetime.now().astimezone())
             shown = len(stamp) - 3 + 1  # stamp is HH:MM:SS.ffffff; the line shows HH:MM:SS.fff and a space
             plain = f"{when} {line.plain[shown:cut]}`{site}` {line.plain[cut:]}"
             record = logging.makeLogRecord({"msg": plain, "levelno": _NUMBERS[level] * 10 or 10})
