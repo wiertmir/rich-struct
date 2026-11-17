@@ -135,6 +135,8 @@ On the console the level name is coloured by level (error is the brightest red),
 
 In Jupyter notebooks (VS Code, JupyterLab) consecutive log lines go into a single block, in the theme's background with a border and an accent bar, and the block grows as the cell runs, instead of one output per line with gaps between them. Anything else the cell outputs in between (a `print`, a plot) ends the block, so logs stay in order with the rest of the output.
 
+![Log lines in one block in a VS Code notebook](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/notebook_log.png)
+
 `configure()` changes the defaults. It is optional, and call it before the first `get_logger()`:
 
 ```python
