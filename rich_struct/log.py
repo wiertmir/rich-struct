@@ -1,6 +1,7 @@
 """Coloured console logging on top of ``structlog``: ``log.info("Took {:03d} ms", ms)`` or ``log.info("Took %03d ms", ms)``."""
 
 import colorsys
+import io
 import logging
 import os
 import re
@@ -12,8 +13,10 @@ from numbers import Number
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import rich.jupyter
 import structlog
 from rich.color import Color, ColorTriplet
+from rich.console import Console
 from rich.default_styles import DEFAULT_STYLES
 from rich.style import Style
 from rich.text import Text
@@ -188,7 +191,63 @@ class DailyFileHandler(logging.FileHandler):
             super().emit(record)
 
 
+def _in_notebook() -> bool:
+    return Console().is_jupyter
+
+
+_block: Dict[str, Any] = {"mark": None, "handle": None, "html": [], "text": []}
+_block_lock = threading.Lock()
+
+
+def _kernel_mark() -> Any:
+    """Changes whenever the kernel sends anything (a print, a plot, a new cell); prints still buffered are sent first."""
+    from IPython import get_ipython
+
+    shell = get_ipython()
+    session = getattr(getattr(shell, "kernel", None), "session", None)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # ponytail: any message counts, so a VS Code variable refresh during an await also starts a new block
+    return getattr(session, "message_count", None), getattr(shell, "execution_count", None)
+
+
+def _show_in_notebook(line: Text, background: Optional[Style], accent: Style) -> None:
+    """Lines logged one after another go into one block, updated in place (a display per line leaves gaps);
+    anything else the cell outputs in between ends the block, so the next line starts a new one."""
+    from IPython.display import display
+
+    out = Console(record=True, file=io.StringIO(), width=10_000, color_system="truecolor", force_jupyter=False)
+    out.print(line, soft_wrap=True)
+    html = out.export_html(inline_styles=True, code_format="{code}")
+    if background and background.color and background.bgcolor:
+        fg = Style(color=background.color)
+        bg = Style(color=background.bgcolor)
+        box = f"background:{background.bgcolor.get_truecolor().hex};border:1px solid {_blend(bg, fg, 0.4).color.get_truecolor().hex}"
+    else:
+        box = "background:rgba(127,127,127,.08);border:1px solid rgba(127,127,127,.45)"
+    if accent.color:
+        box += f";border-left:3px solid {accent.color.get_truecolor().hex}"
+    # rich's <pre> (and its font, see use_rich_font_override), our block style last so it wins
+    block = rich.jupyter.JUPYTER_HTML_FORMAT.replace(
+        '">{code}', f';white-space:pre-wrap;margin:0;padding:6px 10px;border-radius:4px;{box}">{{code}}', 1
+    )
+    with _block_lock:
+        if _block["handle"] is None or _kernel_mark() != _block["mark"]:
+            _block.update(handle=None, html=[], text=[])
+        _block["html"].append(html)
+        _block["text"].append(line.plain)
+        # ponytail: re-sends the whole block per line, O(n^2) for thousands of lines in a row
+        bundle = {"text/html": block.format(code="".join(_block["html"]).rstrip("\n")), "text/plain": "\n".join(_block["text"])}
+        if _block["handle"] is None:
+            _block["handle"] = display(bundle, raw=True, display_id=True)
+        else:
+            _block["handle"].update(bundle, raw=True)
+        _block["mark"] = _kernel_mark()
+
+
 def _render(theme: Optional[ThemeType], message: str, console: bool, thread: bool, handlers: List[logging.Handler]):
+    notebook = console and _in_notebook()
+
     def render(_logger: Any, method: str, event_dict: Dict[str, Any]) -> None:
         event_dict = dict(event_dict)
         event = str(event_dict.pop("event", ""))
@@ -225,7 +284,10 @@ def _render(theme: Optional[ThemeType], message: str, console: bool, thread: boo
         if exc:
             line.append("\n" + exc, base)
         if console:
-            _print(line, file=sys.stderr, theme=theme)
+            if notebook:
+                _show_in_notebook(line, styles.get("background"), get("repr.call"))
+            else:
+                _print(line, file=sys.stderr, theme=theme)
         if handlers:  # same line without colours, dated with local time and UTC offset
             when = datetime.now().astimezone().isoformat(sep=" ", timespec="milliseconds")
             shown = len(stamp) - 3 + 1  # stamp is HH:MM:SS.ffffff; the line shows HH:MM:SS.fff and a space

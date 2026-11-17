@@ -133,6 +133,8 @@ log.exception("Caught {!r}", err)                         # adds the traceback
 
 On the console the level name is coloured by level (error is the brightest red), and every argument by its type (text, numbers, `True`/`False`, `None`, paths, exceptions, anything else), using the theme's colours, never bold. A message that doesn't match its arguments is still logged, with the arguments appended; logging never raises.
 
+In Jupyter notebooks (VS Code, JupyterLab) consecutive log lines go into a single block, in the theme's background with a border and an accent bar, and the block grows as the cell runs, instead of one output per line with gaps between them. Anything else the cell outputs in between (a `print`, a plot) ends the block, so logs stay in order with the rest of the output.
+
 `configure()` changes the defaults. It is optional, and call it before the first `get_logger()`:
 
 ```python

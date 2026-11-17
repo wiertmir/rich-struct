@@ -107,3 +107,39 @@ def test_old_files_are_pruned(tmp_path):
         (tmp_path / f"app_2026_09_{day:02d}.log").touch()
     DailyFileHandler(tmp_path, "app", keep=7).close()
     assert len(list(tmp_path.glob("app_*.log"))) == 7
+
+
+def test_notebook_lines_share_one_block(capsys, monkeypatch):
+    pytest.importorskip("IPython")
+    import IPython.display
+
+    shown = []
+
+    class Handle:
+        def update(self, bundle, raw):
+            shown.append(bundle)
+
+    handles = []
+
+    def display(bundle, raw, display_id):
+        shown.append(bundle)
+        handles.append(Handle())
+        return handles[-1]
+
+    monkeypatch.setattr("rich_struct.log._in_notebook", lambda: True)
+    sent = [0]  # what the kernel's message counter would say
+    monkeypatch.setattr("rich_struct.log._block", {"mark": None, "handle": None, "html": [], "text": []})
+    monkeypatch.setattr("rich_struct.log._kernel_mark", lambda: sent[0])
+    monkeypatch.setattr(IPython.display, "display", display)
+    configure()
+    log = get_logger()
+    log.info("one <b>")
+    log.info("two")
+    sent[0] += 1  # a print in between
+    log.info("three")
+    assert capsys.readouterr().err == ""
+    lines_shown = [[line[13:] for line in b["text/plain"].splitlines()] for b in shown]
+    assert lines_shown == [["INFO     one <b>"], ["INFO     one <b>", "INFO     two"], ["INFO     three"]]
+    assert len(handles) == 2  # "three" went to a new block
+    html = shown[1]["text/html"]
+    assert html.count("<pre") == 1 and "one &lt;b&gt;" in html and "border:1px solid #" in html
