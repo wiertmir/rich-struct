@@ -47,7 +47,7 @@ In VS Code notebooks rich shows output in its own monospace font (Menlo, DejaVu 
 
 ## Screenshots
 
-One per kind of struct, each in a different theme. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) shows every kind in all 25 themes; open it in Jupyter or VS Code to see the colours.
+One per kind of struct, each in a different theme, as a notebook cell shows it. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) shows every kind in all 25 themes; open it in Jupyter or VS Code to see the colours.
 
 **Markdown** — `print_md`, Midnight Slate (the default)
 

@@ -1,20 +1,18 @@
-"""Regenerate the README screenshots: python screenshots/make.py (needs google-chrome, numpy, pandas, markdownify)."""
+"""Regenerate the README screenshots: python screenshots/make.py (needs google-chrome, numpy, pandas, markdownify, pillow)."""
 
-import io
 import os
-import re
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional
+from unittest import mock
 
 import numpy as np
 import pandas as pd
-from rich.console import Console
-from rich.terminal_theme import TerminalTheme
-from rich.text import Text
+import rich.jupyter
+from PIL import Image
 
 import rich_struct as rs
 from rich_struct import ThemeName
@@ -157,23 +155,31 @@ SHOTS = [  # file name, theme, call
 ]
 
 
+def notebook_html(theme: ThemeName, call) -> str:
+    """The HTML a notebook cell shows for this print, frame included."""
+    shown = []
+    with mock.patch("rich.console._is_jupyter", lambda: True), mock.patch.object(
+        rich.jupyter, "display", lambda segments, text: shown.append(rich.jupyter._render_segments(segments))
+    ):
+        call(theme=theme, width=84)
+    return "".join(shown)
+
+
 def shoot(name: str, theme: ThemeName, call) -> None:
-    ansi = io.StringIO()
-    call(theme=theme, file=ansi)
-    base = theme.theme.styles["background"]
-    bg, fg = base.bgcolor.get_truecolor(), base.color.get_truecolor()
-    console = Console(record=True, width=84, file=io.StringIO(), force_terminal=True, color_system="truecolor")
-    console.print(Text.from_ansi(ansi.getvalue()))
-    svg = console.export_svg(title=theme.value, theme=TerminalTheme(bg, fg, [fg] * 8))
-    width, height = map(float, re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg).groups())
+    page = f'<!doctype html><meta charset="utf-8"><body style="margin:0;width:max-content">{notebook_html(theme, call)}'
+    png = OUT / (name + ".png")
     with tempfile.TemporaryDirectory() as tmp:
-        (Path(tmp) / "shot.svg").write_text(svg)
+        (Path(tmp) / "shot.html").write_text(page, encoding="utf-8")
         subprocess.run(
             ["google-chrome", "--headless", "--hide-scrollbars", "--force-device-scale-factor=1.5",
-             f"--window-size={int(width)},{int(height)}", "--default-background-color=00000000",
-             f"--screenshot={OUT / (name + '.png')}", f"file://{tmp}/shot.svg"],
+             "--window-size=1200,2000", "--default-background-color=00000000",
+             f"--screenshot={png}", f"file://{tmp}/shot.html"],
             check=True, capture_output=True,
         )
+    # transparent around the box, so the frame shows on GitHub's light and dark pages alike
+    with Image.open(png) as image:
+        cropped = image.crop(image.getchannel("A").getbbox())
+    cropped.save(png)
 
 
 if __name__ == "__main__":
