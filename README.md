@@ -36,7 +36,10 @@ print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword":
 
 Every function takes `theme=`: a `ThemeName`, its string value, or a rich `Theme`.
 To change the theme for all of them at once, call `set_default_theme("Dracula")` (same accepted values; no argument resets to Midnight Slate).
+In a VS Code notebook the default follows VS Code's colour theme (`workbench.colorTheme` in your user settings): Light Modern for a light one, Dark Modern for a dark one. This needs the kernel to run on the same machine as VS Code; otherwise it stays Midnight Slate.
 Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
+
+In notebooks every `print_*` output sits in a box with rounded corners, a 1px border between the theme's background and text colours, and a little padding, so it stands apart from the notebook even when the notebook's theme matches rich-struct's. Log blocks look the same, plus an accent bar on the left.
 
 In VS Code notebooks rich shows output in its own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font plain `print()` gets instead; `False` switches back. Lines stay closer together than in `print()` output: VS Code gives `print()` a noticeably looser line height, while rich deliberately uses a tight `line-height:normal` so table and panel borders join into solid lines. Copying `print()`'s spacing would leave gaps in those borders.
 

@@ -1,12 +1,15 @@
 """Themed drop-in extension of ``rich.print``."""
 
 import json
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from typing import IO, Any, Optional, Union
 
 import rich.jupyter
+from rich.color import Color, ColorTriplet
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.highlighter import ReprHighlighter
 from rich.json import JSON
@@ -97,7 +100,54 @@ class _NewlineHighlighter(_ObjectHighlighter):
         return result
 
 
-_default_theme: ThemeType = DEFAULT_THEME
+def _blend(a: Style, b: Style, share: float) -> Style:
+    """The colour of ``a`` moved ``share`` of the way to the colour of ``b``."""
+    (r1, g1, b1), (r2, g2, b2) = (s.color.get_truecolor() for s in (a, b))
+    mixed = ColorTriplet(*(round(x + (y - x) * share) for x, y in ((r1, r2), (g1, g2), (b1, b2))))
+    return Style(color=Color.from_triplet(mixed))
+
+
+def _frame(background: Optional[Style]) -> str:
+    """CSS framing notebook output: the theme's background with a border between it and the text colour,
+    or a faint grey tint and border that suit light and dark notebooks alike."""
+    if background and background.color and background.bgcolor:
+        fg, bg = Style(color=background.color), Style(color=background.bgcolor)
+        border = _blend(bg, fg, 0.4).color.get_truecolor().hex
+        return f"background:{background.bgcolor.get_truecolor().hex};border:1px solid {border}"
+    return "background:rgba(127,127,127,.08);border:1px solid rgba(127,127,127,.45)"
+
+
+def _vscode_theme() -> Optional[ThemeName]:
+    """In a VS Code notebook, Light Modern or Dark Modern to match VS Code's colour theme; otherwise None.
+
+    Reads ``workbench.colorTheme`` from VS Code's user settings, so it only sees them when the kernel runs
+    on the machine VS Code runs on.
+    """
+    ipython = sys.modules.get("IPython")
+    shell = ipython.get_ipython() if ipython else None
+    if shell is None or "__vsc_ipynb_file__" not in shell.user_ns:  # set by VS Code's Jupyter extension
+        return None
+    if sys.platform == "win32":
+        config = Path(os.environ.get("APPDATA", ""))
+    elif sys.platform == "darwin":
+        config = Path.home() / "Library" / "Application Support"
+    else:
+        config = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+    try:
+        settings = (config / "Code" / "User" / "settings.json").read_text(encoding="utf-8")
+    except (OSError, ValueError):
+        return None
+    # ponytail: user settings only; workspace settings and window.autoDetectColorScheme are not looked at
+    found = re.search(r'^[\s{,]*"workbench\.colorTheme"\s*:\s*"([^"]*)"', settings, re.MULTILINE)
+    name = found.group(1) if found else "Dark Modern"  # VS Code's default
+    try:
+        light = not ThemeName(name).is_dark  # e.g. "Paper Frost"
+    except ValueError:
+        light = "light" in name.lower()  # e.g. "Default Light Modern", "Quiet Light"
+    return ThemeName.LIGHT_MODERN if light else ThemeName.DARK_MODERN
+
+
+_default_theme: ThemeType = _vscode_theme() or DEFAULT_THEME
 _paint: Optional[bool] = None  # None: paint in notebooks only
 
 
@@ -178,12 +228,14 @@ def print(
         kwargs.setdefault("justify", "left")
         kwargs["style"] = base + console.get_style(kwargs.get("style") or "none")
     html_format = rich.jupyter.JUPYTER_HTML_FORMAT
-    bgcolor = kwargs["style"].bgcolor if isinstance(kwargs.get("style"), Style) else None
-    if _font_override and bgcolor:
-        # the VS Code font is taller than its line box, so rows leave gaps; paint them in the theme background
+    if console.is_jupyter:
+        # a bordered box sets the output apart from the notebook; its background also fills the gaps
+        # between rows that use_rich_font_override's taller VS Code font leaves
+        style = kwargs.get("style")
+        box = _frame(style if background and isinstance(style, Style) else None)
         # ponytail: swaps a module global for one print; not thread-safe, fine for notebooks
         rich.jupyter.JUPYTER_HTML_FORMAT = html_format.replace(
-            '<pre style="', f'<pre style="background:{bgcolor.get_truecolor().hex};', 1
+            '">{code}', f';margin:0;padding:6px 10px;border-radius:4px;{box}">{{code}}', 1
         )
     try:
         console.print(*objects, sep=sep, end=end, **kwargs)

@@ -24,7 +24,7 @@ from rich.theme import Theme
 
 import rich_struct
 from . import print as _print
-from . import ThemeName, ThemeType
+from . import ThemeName, ThemeType, _blend, _frame
 
 __all__ = ["DailyFileHandler", "Logger", "configure", "get_logger"]
 
@@ -160,13 +160,6 @@ def _free_threaded() -> bool:
     return not getattr(sys, "_is_gil_enabled", lambda: True)()
 
 
-def _blend(a: Style, b: Style, share: float) -> Style:
-    """The colour of ``a`` moved ``share`` of the way to the colour of ``b``."""
-    (r1, g1, b1), (r2, g2, b2) = (s.color.get_truecolor() for s in (a, b))
-    mixed = ColorTriplet(*(round(x + (y - x) * share) for x, y in ((r1, r2), (g1, g2), (b1, b2))))
-    return Style(color=Color.from_triplet(mixed))
-
-
 def _brighten(style: Style) -> Style:
     """Full-brightness version of the colour, its hue pulled toward pure red (no pinkish tint)."""
     h, sat, _ = colorsys.rgb_to_hsv(*(c / 255 for c in style.color.get_truecolor()))
@@ -231,12 +224,7 @@ def _show_in_notebook(line: Text, background: Optional[Style], accent: Style) ->
     out = Console(record=True, file=io.StringIO(), width=10_000, color_system="truecolor", force_jupyter=False)
     out.print(line, soft_wrap=True)
     html = out.export_html(inline_styles=True, code_format="{code}")
-    if background and background.color and background.bgcolor:
-        fg = Style(color=background.color)
-        bg = Style(color=background.bgcolor)
-        box = f"background:{background.bgcolor.get_truecolor().hex};border:1px solid {_blend(bg, fg, 0.4).color.get_truecolor().hex}"
-    else:
-        box = "background:rgba(127,127,127,.08);border:1px solid rgba(127,127,127,.45)"
+    box = _frame(background)
     if accent.color:
         box += f";border-left:3px solid {accent.color.get_truecolor().hex}"
     # rich's <pre> (and its font, see use_rich_font_override), our block style last so it wins

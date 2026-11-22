@@ -309,24 +309,28 @@ def test_rich_font_override_is_opt_in():
         rt.use_rich_font_override(False)
 
 
-def test_rich_font_override_paints_notebook_background(monkeypatch):
+def test_notebook_output_is_framed(monkeypatch):
     import rich.console
     import rich.jupyter
 
     html = []
     monkeypatch.setattr(rich.console, "_is_jupyter", lambda: True)
     monkeypatch.setattr(rich.jupyter, "display", lambda segments, text: html.append(rich.jupyter._render_segments(segments)))
+    original = rich.jupyter.JUPYTER_HTML_FORMAT
     try:
         rt.use_rich_font_override(True)
         rt.print_md("# Title")
-        rt.print_md("# Title", background=False)
     finally:
         rt.use_rich_font_override(False)
-    rt.print_md("# Title")
-    assert '<pre style="background:#' in html[0]
-    assert "background:" not in html[1].split(">")[0]
-    assert "background:" not in html[2].split(">")[0]
-    assert "--notebook-cell-output-font-family" not in rich.jupyter.JUPYTER_HTML_FORMAT
+    rt.print_obj({"a": 1}, theme="Paper Frost")
+    rt.print_md("# Title", background=False)
+    tags = [h.split(">")[0] for h in html]
+    assert "--notebook-cell-output-font-family" in tags[0]  # the frame keeps the font override
+    assert "background:#0b1320;border:1px solid #" in tags[0]  # Midnight Slate
+    assert "background:#ffffff;border:1px solid #" in tags[1]  # Paper Frost
+    assert "background:rgba(127,127,127,.08);border:1px solid rgba" in tags[2]  # not painted: neutral tint
+    assert all("border-radius:4px" in t for t in tags)
+    assert rich.jupyter.JUPYTER_HTML_FORMAT == original  # swapped for each print only
 
 
 def test_print_md_keeps_h1_on_the_left():
@@ -354,3 +358,33 @@ def test_print_err_shows_text_and_exceptions_in_error_style(monkeypatch):
     red = "38;2;197;30;58"  # Midnight Slate repr.error red, #C51E3A
     assert "boom [x]" in render(rt.print_err, "boom [x]") and red in render(rt.print_err, "boom")
     assert "ValueError: bad" in render(rt.print_err, ValueError("bad"))
+
+
+def test_vscode_theme_picks_light_or_dark_modern(monkeypatch, tmp_path):
+    import sys
+    import types
+
+    shell = types.SimpleNamespace(user_ns={"__vsc_ipynb_file__": "/x/demo.ipynb"})
+    monkeypatch.setitem(sys.modules, "IPython", types.SimpleNamespace(get_ipython=lambda: shell))
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    settings = tmp_path / "Code" / "User" / "settings.json"
+    assert rt._vscode_theme() is None  # no settings file
+    settings.parent.mkdir(parents=True)
+    light, dark = ThemeName.LIGHT_MODERN, ThemeName.DARK_MODERN
+    for value, expected in [
+        ("Paper Frost", light),  # one of ours
+        ("Default Light Modern", light),
+        ("Quiet Light", light),
+        ("Monokai", dark),
+        ("Default Dark Modern", dark),
+        ("Default High Contrast", dark),
+    ]:
+        settings.write_text('{\n  // a comment,\n  "workbench.colorTheme": "%s",\n}\n' % value)
+        assert rt._vscode_theme() is expected, value
+    settings.write_text('{\n  // "workbench.colorTheme": "Paper Frost",\n}\n')
+    assert rt._vscode_theme() is dark  # commented out: VS Code's default, Dark Modern
+    settings.write_text('{"workbench.colorTheme": "Paper Frost"}')
+    assert rt._vscode_theme() is light
+    shell.user_ns.clear()
+    assert rt._vscode_theme() is None  # not a VS Code notebook
