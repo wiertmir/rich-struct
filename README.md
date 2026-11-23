@@ -1,99 +1,135 @@
 # rich-struct
 
-[`rich`](https://github.com/Textualize/rich)'s `print`, with 25 themes (23 popular editor themes and two originals) and helpers for Markdown, HTML, JSON, YAML, XML, Python objects and tables (lists, numpy arrays, pandas DataFrames and Series), plus coloured [`structlog`](https://www.structlog.org) logging in the same themes.
+Pretty, themed output for Python, built on [`rich`](https://github.com/Textualize/rich). You get rich's `print` with 25 colour themes (23 from popular editors, two of our own) and one-call helpers for Markdown, HTML, JSON, YAML, XML, code, Python objects and tables: lists, numpy arrays, pandas DataFrames and Series. There's also coloured [`structlog`](https://www.structlog.org) logging in the same themes.
 
-> **Note:** rich-struct is not an official implementation or extension of `rich`, and it is not part of the [Textualize/rich](https://github.com/Textualize/rich) project or endorsed by it. It is an independent wrapper, a bridge that makes `rich` easier to use, especially in VS Code Jupyter notebooks.
+It works in a plain terminal and looks best in Jupyter notebooks, VS Code's in particular.
+
+> **Note:** rich-struct is an independent wrapper around `rich`. It isn't part of the [Textualize/rich](https://github.com/Textualize/rich) project, and that project doesn't endorse it.
+
+## Install
+
+You need Python 3.9 or newer. The only required dependency is `rich` 13+.
 
 ```sh
-pip install rich-struct          # add [yaml] to dump objects with print_yaml, [html] for print_html, [log] for rich_struct.log
+pip install rich-struct
 ```
+
+Some features need an extra:
+
+| Extra | Adds | Needed for |
+|---|---|---|
+| `yaml` | `pyyaml` | `print_yaml` with an object, or with `max_list_length` (a plain YAML string works without it) |
+| `html` | `markdownify` | `print_html` |
+| `log` | `structlog` 22+ | `rich_struct.log` |
+
+```sh
+pip install "rich-struct[yaml,html,log]"    # all of them
+```
+
+numpy and pandas aren't dependencies. If you have them installed, rich-struct prints them as tables.
+
+## Quick start
 
 ```python
 from rich.markdown import Markdown
 from rich.theme import Theme
-from rich_struct import ThemeName, print, print_md, print_json, print_yaml, print_xml, print_obj, print_syntax, print_table, print_list, print_html
+from rich_struct import (
+    ThemeName, print, print_err, print_html, print_json, print_list, print_md,
+    print_obj, print_syntax, print_table, print_xml, print_yaml, set_default_theme,
+)
 
-print("[bold]hello[/bold]", {"a": 1})                 # drop-in rich.print, Midnight Slate by default
+print("[bold]hello[/bold]", {"a": 1})                 # works like rich.print, in Midnight Slate by default
 print(Markdown("## Printing structs"), theme=ThemeName.DRACULA)
 
 print_md("# Title\n\n```python\nprint('hi')\n```")
-print_json({"a": [1, 2, None]}, theme="Nord")         # enum value as a string works too
+print_json({"a": [1, 2, None]}, theme="Nord")         # a theme's name as a string works too
 print_yaml("a: 1\nb: [x, y]")
-print_xml("<a><b c='d'/></a>")
-print_html("<h1>Title</h1><p>Some <b>bold</b> text</p>")  # rendered, not its tags
+print_xml("<a><b c='d'/></a>")                        # or an ElementTree element, which gets indented
+print_html("<h1>Title</h1><p>Some <b>bold</b> text</p>")  # renders the page instead of showing its tags
 print_obj(my_dataclass, theme=ThemeName.GITHUB_LIGHT)
-print_obj(data, max_list_length=10, max_string=80)    # long containers/strings end in "... +N"
-print_obj(doc, apply_newlines=True)                   # "\n" in strings breaks the line instead
-print_json(data, max_list_length=10)                  # same for JSON and YAML lists (print_yaml)
+print_obj(data, max_list_length=10, max_string=80)    # long containers and strings end in "... +N"
+print_obj(doc, apply_newlines=True)                   # a "\n" inside a string starts a new line
+print_json(data, max_list_length=10)                  # print_yaml takes max_list_length too
 print_syntax("SELECT 1", "sql")                       # any pygments lexer
 print_table(df, title="Sales")                        # DataFrame, Series, numpy array, list...
-print(df)                                             # arrays and frames become tables in print too
-print_err(ValueError("bad input"))                   # error text or exception, in the theme's error colour
-print_list(series, head_tail_only=True)               # [1, 2.5, 'text',  ...  98, 99]: list, array, Series
+print(df)                                             # print turns arrays and frames into tables too
+print_err(ValueError("bad input"))                    # error text or an exception, in the theme's error colour
+print_list(series, head_tail_only=True)               # [1, 2.5, 'text',  ...  98, 99]
 
 print_md("# Mine", theme=Theme({"markdown.h1": "bold magenta", "syntax.keyword": "red"}))
+set_default_theme("Dracula")                          # every call from now on uses Dracula
 ```
 
-Every function takes `theme=`: a `ThemeName`, its string value, or a rich `Theme`.
-To change the theme for all of them at once, call `set_default_theme("Dracula")` (same accepted values; no argument resets to Midnight Slate).
-In a VS Code notebook the default follows VS Code's colour theme (`workbench.colorTheme` in your user settings): Light Modern for a light one, Dark Modern for a dark one. This needs the kernel to run on the same machine as VS Code; otherwise it stays Midnight Slate.
-Passing `None` to any of them prints `None` (JSON: `null`) in the theme's colour for null values instead of failing.
+## Choosing a theme
 
-In notebooks every `print_*` output sits in a box with rounded corners, a 1px border between the theme's background and text colours, and a little padding, so it stands apart from the notebook even when the notebook's theme matches rich-struct's. Log blocks look the same, plus an accent bar on the left.
+Every function takes `theme=`, which can be a `ThemeName`, its string value (`"Nord"`), or your own rich `Theme`. To change the theme everywhere at once, call `set_default_theme("Dracula")`. It accepts the same values, and calling it with no argument goes back to Midnight Slate.
 
-In VS Code notebooks rich shows output in its own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font plain `print()` gets instead; `False` switches back. Lines stay closer together than in `print()` output: VS Code gives `print()` a noticeably looser line height, while rich deliberately uses a tight `line-height:normal` so table and panel borders join into solid lines. Copying `print()`'s spacing would leave gaps in those borders.
+In a VS Code notebook the default theme follows VS Code's colour theme (`workbench.colorTheme` in your user settings): you get Light Modern with a light VS Code theme and Dark Modern with a dark one. This only works when the kernel runs on the same machine as VS Code. Otherwise the default stays Midnight Slate.
 
-`ThemeName.X.theme` gives you the underlying rich `Theme` to use with your own `Console`.
+If you want a theme for your own `Console`, `ThemeName.X.theme` gives you the underlying rich `Theme`.
+
+## Notebooks
+
+In a notebook, each `print_*` output sits in its own box: rounded corners, a little padding and a 1px border in a colour between the theme's background and text. That keeps it separate from the rest of the notebook, even when the notebook uses the same theme. Log blocks look the same and also have an accent bar on the left.
+
+VS Code notebooks show rich's output in rich's own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font that plain `print()` gets, and `False` to switch back. Lines stay closer together than in `print()` output on purpose. VS Code gives `print()` a looser line height, but rich keeps `line-height:normal` so that table and panel borders join into solid lines, and copying `print()`'s spacing would leave gaps in them.
+
+## A few things that hold for every function
+
+- Passing `None` prints `None` (`null` for JSON) in the theme's colour for null values. Nothing raises.
+- In a notebook, output is painted on the theme's background across the full width. In a terminal it keeps the terminal's own background. Pass `background=True` or `False` to one call, or call `use_background(True/False)` to change the default; `use_background(None)` brings back the automatic choice.
+- Output without colour, such as output piped to a file, gets no background or padding.
+- Other keyword arguments (`style=`, `justify=`, ...) go through to rich's `Console.print`.
 
 ## Screenshots
 
-One per kind of struct, each in a different theme, as a notebook cell shows it. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) shows every kind in all 25 themes; open it in Jupyter or VS Code to see the colours.
+Each kind of struct is shown in a different theme, as it looks in a notebook cell. The [demo notebook](https://github.com/wiertmir/rich-struct/blob/main/demos.ipynb) has every kind in all 25 themes; open it in Jupyter or VS Code to see the colours.
 
-**Markdown** — `print_md`, Midnight Slate (the default)
+Markdown with `print_md`, in Midnight Slate (the default):
 
 ![Markdown in the Midnight Slate theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/markdown.png)
 
-**HTML** — `print_html`, Dracula
+HTML with `print_html`, in Dracula:
 
 ![HTML in the Dracula theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/html.png)
 
-**JSON** — `print_json`, Nord
+JSON with `print_json`, in Nord:
 
 ![JSON in the Nord theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/json.png)
 
-**YAML** — `print_yaml`, One Dark Pro
+YAML with `print_yaml`, in One Dark Pro:
 
 ![YAML in the One Dark Pro theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/yaml.png)
 
-**XML** — `print_xml`, GitHub Dark
+XML with `print_xml`, in GitHub Dark:
 
 ![XML in the GitHub Dark theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/xml.png)
 
-**Python objects** — `print_obj`, Catppuccin Mocha
+Python objects with `print_obj`, in Catppuccin Mocha:
 
 ![Python objects in the Catppuccin Mocha theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/object.png)
 
-**Code** — `print_syntax`, One Light
+Code with `print_syntax`, in One Light:
 
 ![Code in the One Light theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/code.png)
 
-**Lists** — `print_table`, Catppuccin Latte
+Lists with `print_table`, in Catppuccin Latte:
 
 ![Lists in the Catppuccin Latte theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/list.png)
 
-**Sequences** — `print_list` with `head_tail_only`, Tokyo Night
+A sequence with `print_list` and `head_tail_only`, in Tokyo Night:
 
 ![A sequence in the Tokyo Night theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/sequence.png)
 
-**NumPy arrays** — `print_table`, Solarized Dark
+NumPy arrays with `print_table`, in Solarized Dark:
 
 ![NumPy arrays in the Solarized Dark theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/numpy.png)
 
-**pandas DataFrames** — `print_table`, GitHub Light
+pandas DataFrames with `print_table`, in GitHub Light:
 
 ![pandas DataFrames in the GitHub Light theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/dataframe.png)
 
-**pandas Series** — `print_table`, Night Owl
+pandas Series with `print_table`, in Night Owl:
 
 ![pandas Series in the Night Owl theme](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/series.png)
 
@@ -101,32 +137,34 @@ One per kind of struct, each in a different theme, as a notebook cell shows it. 
 
 `print_table(data, title=None, max_rows=20, max_cols=10)` accepts:
 
-- pandas `DataFrame` and `Series`, numpy arrays of any dimension (more than 2: one table per slice)
-- lists of dicts (records), lists of lists (a grid), and any other sequence such as `array.array` or `range` (one column)
+- pandas `DataFrame` and `Series`, and numpy arrays of any dimension (with more than two dimensions you get one table per slice)
+- lists of dicts (one row per dict), lists of lists (a grid), and any other sequence, such as `array.array` or `range`, as a single column
 
-Numbers are right-aligned, floats in a column share their decimals, and missing values are dimmed.
-Long data shows its head and tail around a `…` gap, and columns that don't fit the terminal width go into the gap as well.
-`to_table(data)` returns the renderable instead of printing it. numpy and pandas are not dependencies.
+Numbers are right-aligned, floats in a column line up on the same number of decimals, and missing values are dimmed. Long data shows its first and last rows with a `…` gap between them. Columns that don't fit the terminal width go into the gap too.
+
+Use `to_table(data)` to get the rich renderable without printing it.
 
 ## Lists
 
-`print_list(data, wrap=True, head_tail_only=False, head_tail_size=100)` prints a list, tuple, `array.array`, numpy array or pandas `Series` as one sequence: `[123, 1444.555, 'Test text', 4345.666]`.
+`print_list(data, wrap=True, head_tail_only=False, head_tail_size=100)` prints a list, tuple, `array.array`, numpy array or pandas `Series` on one line, like `[123, 1444.555, 'Test text', 4345.666]`.
 
-It wraps at the terminal width; `wrap=False` keeps it on one line.
-`head_tail_only=True` shows only the first and last `head_tail_size` elements, with a highlighted `  ...  ` between them.
+Long lists wrap at the terminal width, unless you pass `wrap=False`. With `head_tail_only=True` you see only the first and last `head_tail_size` items, with a highlighted `  ...  ` between them.
 
 ## Logging
 
-`rich_struct.log` is coloured console logging (and, optionally, daily log files) on top of [`structlog`](https://www.structlog.org). It needs `pip install "rich-struct[log]"`; the rest of rich-struct doesn't.
+`rich_struct.log` gives you coloured console logging, and daily log files if you want them, on top of [`structlog`](https://www.structlog.org). Install it with `pip install "rich-struct[log]"`. The rest of rich-struct works without it.
 
 ```python
 from rich_struct.log import get_logger
 
-log = get_logger()                       # console only, nothing to set up
+log = get_logger()                                        # console only, no setup needed
 log.info("Processed %s in %03d ms.", position, elapsed)   # printf style...
 log.info("Processed {} in {:03d} ms.", position, elapsed) # ...or str.format style
-log.info("Saved", user="bob", retries=3)                  # fields: key=value
+log.info("Saved", user="bob", retries=3)                  # extra fields as key=value
 log.exception("Caught {!r}", err)                         # adds the traceback
+
+job_log = log.bind(job="nightly")                         # every line from job_log carries job=nightly
+job_log.info("Started")                                   # unbind("job") and new(...) work as in structlog
 ```
 
 ```
@@ -134,38 +172,46 @@ log.exception("Caught {!r}", err)                         # adds the traceback
 12:33:30.239 ERROR    Caught ZeroDivisionError('division by zero')
 ```
 
-On the console the level name is coloured by level (error is the brightest red), and every argument by its type (text, numbers, `True`/`False`, `None`, paths, exceptions, anything else), using the theme's colours, never bold. A `datetime` argument or field (without a format spec) is shown to the millisecond with its own UTC offset, not converted to local time, so you see the zone it came from: `2026-10-29 12:33:30.238+09:00`. A message that doesn't match its arguments is still logged, with the arguments appended; logging never raises.
+On the console, the level name is coloured by level (errors get the brightest red) and each argument by its type: text, numbers, `True`/`False`, `None`, paths, exceptions and everything else. The colours come from the theme, and nothing is bold.
 
-In Jupyter notebooks (VS Code, JupyterLab) consecutive log lines go into a single block, in the theme's background with a border and an accent bar, and the block grows as the cell runs, instead of one output per line with gaps between them. Anything else the cell outputs in between (a `print`, a plot) ends the block, so logs stay in order with the rest of the output.
+A `datetime` argument or field without a format spec is shown to the millisecond with its own UTC offset, like `2026-10-29 12:33:30.238+09:00`. It isn't converted to local time, so you can see which zone it came from.
+
+If a message doesn't match its arguments, the line is still logged with the arguments added at the end. Logging never raises.
+
+In Jupyter notebooks (VS Code or JupyterLab), consecutive log lines share one block that grows while the cell runs, in the theme's background with a border and an accent bar. Without this you'd get a separate output per line with gaps between them. Any other output in between, such as a `print` or a plot, closes the block, so the logs stay in order with everything else.
 
 ![Log lines in one block in a VS Code notebook](https://raw.githubusercontent.com/wiertmir/rich-struct/main/screenshots/notebook_log.png)
 
-`configure()` changes the defaults. It is optional, and call it before the first `get_logger()`:
+### Configuring
+
+`configure()` is optional. It changes the defaults, and you need to call it before the first `get_logger()`:
 
 ```python
 from rich_struct.log import configure
 
 configure(level="info")                  # debug (default), info, warning, error or critical
-configure(theme="Dracula")               # any rich-struct theme; default is the one from set_default_theme()
+configure(theme="Dracula")               # any rich-struct theme; defaults to the one from set_default_theme()
 configure(message="tint")                # colour of the message text, see below
 configure(console=False)                 # no console output
-configure(thread=True)                   # thread name in the lines (default: only on free-threaded Python)
+configure(thread=True)                   # thread name on every line (default: only on free-threaded Python)
 configure(file=True)                     # also write logs/<script name>_yyyy_mm_dd.log
-configure(file="var/log", keep=14)       # another folder, keep 14 days
-configure(handler=my_handler)            # any logging.Handler also gets every line
+configure(file="var/log", keep=14)       # use another folder and keep 14 days
+configure(handler=my_handler)            # send every line to any logging.Handler as well
 ```
 
-`message=` picks the colour of the message text: `"plain"` (default, the theme's text colour), `"level"` (the level's colour) or `"tint"` (the text colour with a hint of the level's). Fields keep their own colours either way.
+`message=` sets the colour of the message text. `"plain"` (the default) uses the theme's text colour, `"level"` uses the level's colour, and `"tint"` mixes a little of the level's colour into the text colour. Fields keep their own colours in all three.
 
-`file=True` writes the same lines without colours, starting with the local date, time and UTC offset, and adding the logging `` `module.Class` `` (the class when the call is inside a method):
+With `file=True`, the file gets the same lines without colours. Each line starts with the local date, time and UTC offset, and names the module (and the class, when the call is inside a method) that logged it:
 
 ```
 2026-10-29 12:33:30.238+09:00 INFO     `__main__.Job` Processed A-17 in 042 ms.
 ```
 
-A new file starts at local midnight and only the newest `keep` (7) files stay. On free-threaded Python, both outputs also show the thread name, `[worker-1]`, after the level (`thread=True`/`False` forces it on/off).
+A new file starts at local midnight, and only the newest `keep` files (7 by default) are kept. The handler behind this is `DailyFileHandler`, which you can also use on its own.
 
-`configure()` is `structlog.configure()` underneath, so it applies to every structlog logger in the process. `examples/log_demo.py` in the repository shows it all.
+On free-threaded Python, both the console and the file show the thread name, like `[worker-1]`, after the level. `thread=True` or `False` turns it on or off anywhere.
+
+`configure()` calls `structlog.configure()`, so it affects every structlog logger in the process. [`examples/log_demo.py`](https://github.com/wiertmir/rich-struct/blob/main/examples/log_demo.py) shows all of it in one script.
 
 ## Themes
 
@@ -185,8 +231,17 @@ A new file starts at local midnight and only the newest `keep` (7) files stay. O
 | Dark Modern | Paper Frost |
 | Midnight Slate (default) | |
 
-Themes are built from each theme's colour palette, not ported token-by-token from the editor.
+Midnight Slate and Paper Frost are rich-struct's own. The others take their colours from each editor theme's palette, so they look close to the original, though a given token may not get the exact colour your editor gives it.
 
-Output is painted on the theme's background across the full width in Jupyter notebooks, and left on the terminal's own background in a console. Pass `background=True/False` to a call, or call `use_background(True/False)` once to change the default (`None` restores the automatic choice); nothing is painted or padded when the output has no colour (e.g. piped to a file). A custom `Theme` gets a background by defining a `background` style, e.g. `"background": "#c0caf5 on #1a1b26"`.
+### Making your own
 
-Code colours come from `syntax.*` styles (`text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute`, `operator`); a custom `Theme` may override any of them, and may set `syntax.block` (e.g. `"on #111c2e"`) to shade code blocks inside Markdown, and `repr.background` to give `print_obj` output its own background.
+Any rich `Theme` works. These styles have a special meaning:
+
+- `background` paints the output's background, e.g. `"background": "#c0caf5 on #1a1b26"`. Without it, a custom theme gets no background.
+- `syntax.*` styles colour code: `text`, `comment`, `keyword`, `string`, `number`, `function`, `type`, `tag`, `attribute` and `operator`. You can override any of them.
+- `syntax.block` (e.g. `"on #111c2e"`) shades code blocks inside Markdown.
+- `repr.background` gives `print_obj` output its own background.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
