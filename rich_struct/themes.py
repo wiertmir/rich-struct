@@ -124,8 +124,8 @@ _DARK = frozenset(list(T)[:13])
 _MUTED = {T.DARK_MODERN: "#6e7681", T.LIGHT_MODERN: "#767676", T.LIGHT_PLUS: "#767676"}
 # Styles that differ from what the palette alone would give (applied on top in _build).
 _OVERRIDES = {
-    T.MIDNIGHT_SLATE: {
-        "syntax.tag": "#7dd3fc",
+    T.MIDNIGHT_SLATE: {  # markdown and code as in the Midnight Slate VS Code theme (../midnight-slate)
+        # colours with alpha there are blended onto the background here
         "repr.error": "#C51E3A",
         "repr.exception": "#BC8F8F",
         "syntax.block": "on #111c2e",
@@ -134,18 +134,22 @@ _OVERRIDES = {
         "markdown.h3": "bold #7dd3fc",
         "markdown.h4": "bold #a5b4fc",
         "markdown.h5": "#a5b4fc",
-        "markdown.h6": "dim #a5b4fc",
-        "markdown.strong": "bold #ffffff",
-        "markdown.em": "italic #c4b5fd",
-        "markdown.emph": "italic #c4b5fd",
+        "markdown.h6": "#818cf8",
+        "markdown.strong": "bold #fffbe6",  # white with a hint of gold
+        "markdown.em": "italic #94a3b8",
+        "markdown.emph": "italic #94a3b8",
         "markdown.s": "strike #64748b",
-        "markdown.code": "#fbbf24 on #111c2e",
-        "markdown.block_quote": "italic #86efac",
-        "markdown.item.bullet": "bold #86efac",
-        "markdown.item.number": "bold #86efac",
-        "markdown.link": "underline #38bdf8",
+        "markdown.code": "#907550 on #171f2b",  # #e0af6899 on #ffffff0d
+        "markdown.block_quote": "italic #d293ae on #111c2e",
+        "markdown.block_quote.border": "#8b556b",
+        "markdown.item.bullet": "bold #a6e3a1",
+        "markdown.item.number": "bold #a6e3a1",
+        "markdown.link": "#38bdf8",
         "markdown.link_url": "underline #38bdf8",  # rich styles link text with link_url
         "markdown.hr": "#475569",
+        "markdown.table.border": "#3b4555",  # #94a3b859
+        "markdown.table.header_row": "on #161e2c",  # #94a3b814
+        "markdown.table.stripe": "on #111925",  # #ffffff06
         "json.brace": "#94a3b8",
         "json.key": "#a3c2f2",
         "json.bool_true": "bold #22d3ee",

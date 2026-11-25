@@ -13,10 +13,11 @@ from rich.color import Color, ColorTriplet
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.highlighter import ReprHighlighter
 from rich.json import JSON
-from rich.markdown import Heading, Markdown
+from rich.markdown import BlockQuote, Heading, Markdown, Paragraph, TableElement
 from rich.padding import Padding
 from rich.pretty import Pretty, is_expandable, pretty_repr
 from rich.protocol import is_renderable
+from rich.segment import Segment
 from rich.style import Style
 from rich.syntax import Syntax
 from rich.text import Text
@@ -148,6 +149,8 @@ def _vscode_theme() -> Optional[ThemeName]:
 
 
 _default_theme: ThemeType = _vscode_theme() or DEFAULT_THEME
+# print_md's default when it differs from _default_theme: Midnight Slate under a dark VS Code theme
+_md_theme: Optional[ThemeType] = DEFAULT_THEME if _default_theme is ThemeName.DARK_MODERN else None
 _paint: Optional[bool] = None  # None: paint in notebooks only
 
 
@@ -165,10 +168,11 @@ def set_default_theme(theme: ThemeType = DEFAULT_THEME) -> None:
 
     Call it with no argument to go back to Midnight Slate.
     """
-    global _default_theme
+    global _default_theme, _md_theme
     if not isinstance(theme, Theme):
         theme = ThemeName(theme)  # fail here, not at the next print
     _default_theme = theme
+    _md_theme = None  # an explicit choice applies to print_md too
 
 
 def print(
@@ -251,6 +255,8 @@ def print_err(err: Union[str, BaseException], *, theme: Optional[ThemeType] = No
 
 
 def print_md(markdown: Optional[str], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
+    if theme is None:
+        theme = _md_theme
     if markdown is None:
         return print(None, theme=theme, **kwargs)
     print(_Markdown(markdown), theme=theme, **kwargs)
@@ -265,8 +271,42 @@ class _LeftHeading(Heading):
         yield text
 
 
+class _Paragraph(Paragraph):
+    """A paragraph; inside a block quote it keeps the quote's colour."""
+
+    def on_enter(self, context: Any) -> None:
+        if any(isinstance(element, BlockQuote) for element in context.stack):
+            self.style_name = "none"
+        super().on_enter(context)
+
+
+class _BlockQuote(BlockQuote):
+    """A block quote whose bar can have its own colour (``markdown.block_quote.border``)."""
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        bar = Segment("▌ ", self.style + console.get_style("markdown.block_quote.border", default="none"))
+        for segment in super().__rich_console__(console, options):
+            yield bar if segment.text == "▌ " else segment
+
+
+class _Table(TableElement):
+    """A table with the optional ``markdown.table.header_row`` and ``markdown.table.stripe`` backgrounds."""
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        for table in super().__rich_console__(console, options):
+            table.header_style = console.get_style("markdown.table.header_row", default="none")
+            table.row_styles = ["none", console.get_style("markdown.table.stripe", default="none")]
+            yield table
+
+
 class _Markdown(Markdown):
-    elements = {**Markdown.elements, "heading_open": _LeftHeading}
+    elements = {
+        **Markdown.elements,
+        "heading_open": _LeftHeading,
+        "paragraph_open": _Paragraph,
+        "blockquote_open": _BlockQuote,
+        "table_open": _Table,
+    }
 
 
 def _code_language(el: Any) -> str:

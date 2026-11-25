@@ -388,3 +388,30 @@ def test_vscode_theme_picks_light_or_dark_modern(monkeypatch, tmp_path):
     assert rt._vscode_theme() is light
     shell.user_ns.clear()
     assert rt._vscode_theme() is None  # not a VS Code notebook
+
+
+def test_print_md_uses_midnight_slate_under_dark_vscode(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    slate_bg, dark_modern_bg = "48;2;11;19;32", "48;2;31;31;31"
+    monkeypatch.setattr(rt, "_default_theme", ThemeName.DARK_MODERN)
+    monkeypatch.setattr(rt, "_md_theme", ThemeName.MIDNIGHT_SLATE)  # as set at import under dark VS Code
+    assert slate_bg in render(rt.print_md, "x")
+    assert dark_modern_bg in render(rt.print, "x")  # other printers keep Dark Modern
+    try:
+        rt.set_default_theme("Dark Modern")  # an explicit choice wins for print_md too
+        assert dark_modern_bg in render(rt.print_md, "x")
+    finally:
+        rt.set_default_theme()
+
+
+def test_midnight_slate_quotes_and_tables_follow_the_vscode_theme(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    quote = render(rt.print_md, "> said", theme="Midnight Slate")
+    assert "38;2;139;85;107;48;2;17;28;46m▌" in quote  # bar #8b556b on #111c2e
+    assert "38;2;210;147;174;48;2;17;28;46msaid" in quote  # text #d293ae, not the paragraph colour
+    table = render(rt.print_md, "| a |\n|---|\n| 1 |\n| 2 |", theme="Midnight Slate")
+    assert "48;2;22;30;44ma" in table  # header row background #161e2c
+    assert "48;2;17;25;37m2" in table and "48;2;17;25;37m1" not in table  # every other row striped
+    assert "48;2;17;25;37m" not in render(rt.print_md, "| a |\n|---|\n| 1 |\n| 2 |", theme="Nord")
