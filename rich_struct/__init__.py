@@ -13,7 +13,7 @@ from rich.color import Color, ColorTriplet
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.highlighter import ReprHighlighter
 from rich.json import JSON
-from rich.markdown import BlockQuote, Heading, Markdown, Paragraph, TableElement
+from rich.markdown import BlockQuote, CodeBlock, Heading, Markdown, Paragraph, TableElement
 from rich.padding import Padding
 from rich.pretty import Pretty, is_expandable, pretty_repr
 from rich.protocol import is_renderable
@@ -73,8 +73,13 @@ _font_override = False
 class _ObjectHighlighter(ReprHighlighter):
     """rich's repr highlighting, plus dict keys as ``repr.key`` (themes without it show them as strings)."""
 
-    # ponytail: any quoted string followed by ": " counts as a key; a real parser if that misfires
-    highlights = [*ReprHighlighter.highlights, r"""(?P<key>(?<!\w)(?:'[^'\n]*'|"[^"\n]*"))(?=: )"""]
+    # ponytail: any string literal followed by ": " counts as a key; a real parser if that misfires.
+    # Every literal is matched whole, so quotes inside a string never start one.
+    highlights = [
+        *ReprHighlighter.highlights,
+        r"""(?<![\\\w])(?:(?P<key>b?(?:'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"))(?=: )"""
+        r"""|b?(?:'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"))""",
+    ]
 
 
 # a quoted string in a repr; backslash escapes inside it don't end it
@@ -119,7 +124,7 @@ def _frame(background: Optional[Style]) -> str:
 
 
 def _vscode_theme() -> Optional[ThemeName]:
-    """In a VS Code notebook, Light Modern or Dark Modern to match VS Code's colour theme; otherwise None.
+    """In a VS Code notebook, Light Modern or Midnight Slate to match VS Code's colour theme; otherwise None.
 
     Reads ``workbench.colorTheme`` from VS Code's user settings, so it only sees them when the kernel runs
     on the machine VS Code runs on.
@@ -145,12 +150,10 @@ def _vscode_theme() -> Optional[ThemeName]:
         light = not ThemeName(name).is_dark  # e.g. "Paper Frost"
     except ValueError:
         light = "light" in name.lower()  # e.g. "Default Light Modern", "Quiet Light"
-    return ThemeName.LIGHT_MODERN if light else ThemeName.DARK_MODERN
+    return ThemeName.LIGHT_MODERN if light else ThemeName.MIDNIGHT_SLATE
 
 
 _default_theme: ThemeType = _vscode_theme() or DEFAULT_THEME
-# print_md's default when it differs from _default_theme: Midnight Slate under a dark VS Code theme
-_md_theme: Optional[ThemeType] = DEFAULT_THEME if _default_theme is ThemeName.DARK_MODERN else None
 _paint: Optional[bool] = None  # None: paint in notebooks only
 
 
@@ -168,11 +171,10 @@ def set_default_theme(theme: ThemeType = DEFAULT_THEME) -> None:
 
     Call it with no argument to go back to Midnight Slate.
     """
-    global _default_theme, _md_theme
+    global _default_theme
     if not isinstance(theme, Theme):
         theme = ThemeName(theme)  # fail here, not at the next print
     _default_theme = theme
-    _md_theme = None  # an explicit choice applies to print_md too
 
 
 def print(
@@ -214,7 +216,7 @@ def print(
             obj.code_theme = syntax_theme(rich_theme, block=True)
         elif isinstance(obj, Syntax):
             # ponytail: Syntax has no public theme setter; rebuild the object if rich renames this
-            obj._theme = code_theme
+            obj._theme = code_theme.keyed if obj.lexer and _is_data(obj.lexer.aliases[0]) else code_theme
     # width goes to the Console: Console.print can only narrow it, print_list needs it wider
     console = Console(theme=rich_theme, file=file, width=kwargs.pop("width", None))
     base = rich_theme.styles.get("background")
@@ -255,8 +257,6 @@ def print_err(err: Union[str, BaseException], *, theme: Optional[ThemeType] = No
 
 
 def print_md(markdown: Optional[str], *, theme: Optional[ThemeType] = None, **kwargs: Any) -> None:
-    if theme is None:
-        theme = _md_theme
     if markdown is None:
         return print(None, theme=theme, **kwargs)
     print(_Markdown(markdown), theme=theme, **kwargs)
@@ -299,6 +299,20 @@ class _Table(TableElement):
             yield table
 
 
+def _is_data(lexer: str) -> bool:
+    """A language whose ``Name.Tag`` tokens are keys (``syntax.key``), not tags."""
+    return lexer in ("json", "yaml", "yml")
+
+
+class _CodeBlock(CodeBlock):
+    """A code block; JSON and YAML keys get ``syntax.key``."""
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        if _is_data(self.lexer_name):
+            self.theme = getattr(self.theme, "keyed", self.theme)
+        yield from super().__rich_console__(console, options)
+
+
 class _Markdown(Markdown):
     elements = {
         **Markdown.elements,
@@ -306,6 +320,8 @@ class _Markdown(Markdown):
         "paragraph_open": _Paragraph,
         "blockquote_open": _BlockQuote,
         "table_open": _Table,
+        "fence": _CodeBlock,
+        "code_block": _CodeBlock,
     }
 
 

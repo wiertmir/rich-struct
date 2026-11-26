@@ -2,7 +2,7 @@
 
 from enum import Enum
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Optional
 
 from pygments.token import (
     Comment,
@@ -135,7 +135,8 @@ _OVERRIDES = {
         "markdown.h4": "bold #a5b4fc",
         "markdown.h5": "#a5b4fc",
         "markdown.h6": "#818cf8",
-        "markdown.strong": "bold #fffbe6",  # white with a hint of gold
+        "markdown.strong": "bold #fffbe6",  # white with a hint of gold, as are property names:
+        "syntax.key": "#fffbe6",  # JSON and YAML keys in code
         "markdown.em": "italic #94a3b8",
         "markdown.emph": "italic #94a3b8",
         "markdown.s": "strike #64748b",
@@ -151,14 +152,14 @@ _OVERRIDES = {
         "markdown.table.header_row": "on #161e2c",  # #94a3b814
         "markdown.table.stripe": "on #111925",  # #ffffff06
         "json.brace": "#94a3b8",
-        "json.key": "#a3c2f2",
+        "json.key": "#fffbe6",
         "json.bool_true": "bold #22d3ee",
         "json.bool_false": "bold #22d3ee",
         "json.null": "italic #85B09A",
         # objects (print_obj)
         "repr.background": "on #0f172a",
-        "repr.attrib_name": "#a3c2f2",
-        "repr.key": "#a3c2f2",
+        "repr.attrib_name": "#fffbe6",
+        "repr.key": "#fffbe6",
         "repr.call": "bold #79c0ff",
         "repr.str": "#a3e635",
         "repr.number": "#d8809e",
@@ -349,9 +350,11 @@ def _build(name: ThemeName) -> Theme:
 
 
 class _SyntaxTheme(ANSISyntaxTheme):
-    def __init__(self, style_map: dict, background: Style) -> None:
+    def __init__(self, style_map: dict, background: Style, key: Optional[Style] = None) -> None:
         super().__init__(style_map)
         self.background = background
+        # the same theme for JSON and YAML, whose keys pygments marks as Name.Tag
+        self.keyed = _SyntaxTheme({**style_map, Name.Tag: key}, background) if key else self
 
     def get_background_style(self) -> Style:
         return self.background
@@ -370,4 +373,5 @@ def syntax_theme(theme: Theme, block: bool = False) -> SyntaxTheme:
         for name in set(_TOKENS.values())
     }
     background = theme.styles.get("syntax.block", Style.null()) if block else Style.null()
-    return _SyntaxTheme({token: styles[name] for token, name in _TOKENS.items()}, background)
+    style_map = {token: styles[name] for token, name in _TOKENS.items()}
+    return _SyntaxTheme(style_map, background, theme.styles.get("syntax.key"))

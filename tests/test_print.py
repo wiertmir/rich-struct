@@ -35,7 +35,7 @@ def test_theme_colours_reach_the_output(monkeypatch):
     assert keyword in render(rt.print_syntax, "def f(): pass", "python")
     assert keyword in render(rt.print_md, "```python\ndef f(): pass\n```")
     assert keyword not in render(rt.print_syntax, "def f(): pass", "python", theme="Nord")
-    assert "38;2;163;194;242" in render(rt.print_json, {"a": 1})  # key, #a3c2f2
+    assert "38;2;255;251;230" in render(rt.print_json, {"a": 1})  # key, gold-tinted #fffbe6
 
 
 @dataclass
@@ -133,11 +133,11 @@ def test_objects_get_their_own_colours_and_background_in_midnight_slate(monkeypa
     page_bg, object_bg = "48;2;11;19;32", "48;2;15;23;42"  # #0b1320, #0f172a
     out = render(rt.print_obj, Point(1, "y"))
     assert object_bg in out and page_bg not in out
-    assert "38;2;163;194;242" in out and "1;38;2;121;192;255" in out  # property #a3c2f2 (as JSON keys), class bold #79c0ff (as GitHub Dark)
+    assert "38;2;255;251;230" in out and "1;38;2;121;192;255" in out  # property #fffbe6 (as JSON keys), class bold #79c0ff (as GitHub Dark)
     assert object_bg not in render(rt.print_md, "text") and object_bg not in render(rt.print_obj, 1, background=False)
     assert "48;2;46;52;64" in render(rt.print_obj, 1, theme="Nord")  # other themes: the page background
     # dict keys take the property colour here, and stay string-coloured in themes without repr.key
-    prop, slate_str, nord_str = "38;2;163;194;242", "38;2;163;230;53", "38;2;163;190;140"
+    prop, slate_str, nord_str = "38;2;255;251;230", "38;2;163;230;53", "38;2;163;190;140"
     out = render(rt.print_obj, {"key": "value"})
     assert f"{prop};48;2;15;23;42m'key'" in out and f"{slate_str};48;2;15;23;42m'value'" in out
     assert f"{nord_str};48;2;46;52;64m'key'" in render(rt.print_obj, {"key": "value"}, theme="Nord")
@@ -371,7 +371,7 @@ def test_vscode_theme_picks_light_or_dark_modern(monkeypatch, tmp_path):
     settings = tmp_path / "Code" / "User" / "settings.json"
     assert rt._vscode_theme() is None  # no settings file
     settings.parent.mkdir(parents=True)
-    light, dark = ThemeName.LIGHT_MODERN, ThemeName.DARK_MODERN
+    light, dark = ThemeName.LIGHT_MODERN, ThemeName.MIDNIGHT_SLATE
     for value, expected in [
         ("Paper Frost", light),  # one of ours
         ("Default Light Modern", light),
@@ -383,26 +383,11 @@ def test_vscode_theme_picks_light_or_dark_modern(monkeypatch, tmp_path):
         settings.write_text('{\n  // a comment,\n  "workbench.colorTheme": "%s",\n}\n' % value)
         assert rt._vscode_theme() is expected, value
     settings.write_text('{\n  // "workbench.colorTheme": "Paper Frost",\n}\n')
-    assert rt._vscode_theme() is dark  # commented out: VS Code's default, Dark Modern
+    assert rt._vscode_theme() is dark  # commented out: VS Code's default, Dark Modern, so dark
     settings.write_text('{"workbench.colorTheme": "Paper Frost"}')
     assert rt._vscode_theme() is light
     shell.user_ns.clear()
     assert rt._vscode_theme() is None  # not a VS Code notebook
-
-
-def test_print_md_uses_midnight_slate_under_dark_vscode(monkeypatch):
-    monkeypatch.setenv("FORCE_COLOR", "1")
-    monkeypatch.setenv("COLORTERM", "truecolor")
-    slate_bg, dark_modern_bg = "48;2;11;19;32", "48;2;31;31;31"
-    monkeypatch.setattr(rt, "_default_theme", ThemeName.DARK_MODERN)
-    monkeypatch.setattr(rt, "_md_theme", ThemeName.MIDNIGHT_SLATE)  # as set at import under dark VS Code
-    assert slate_bg in render(rt.print_md, "x")
-    assert dark_modern_bg in render(rt.print, "x")  # other printers keep Dark Modern
-    try:
-        rt.set_default_theme("Dark Modern")  # an explicit choice wins for print_md too
-        assert dark_modern_bg in render(rt.print_md, "x")
-    finally:
-        rt.set_default_theme()
 
 
 def test_midnight_slate_quotes_and_tables_follow_the_vscode_theme(monkeypatch):
@@ -415,3 +400,23 @@ def test_midnight_slate_quotes_and_tables_follow_the_vscode_theme(monkeypatch):
     assert "48;2;22;30;44ma" in table  # header row background #161e2c
     assert "48;2;17;25;37m2" in table and "48;2;17;25;37m1" not in table  # every other row striped
     assert "48;2;17;25;37m" not in render(rt.print_md, "| a |\n|---|\n| 1 |\n| 2 |", theme="Nord")
+
+
+def test_midnight_slate_property_names_are_gold_everywhere(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    gold = "38;2;255;251;230m"  # #fffbe6
+    assert gold + "key" in render(rt.print_yaml, "key: v", background=False)
+    assert gold + '"k"' in render(rt.print_syntax, '{"k": 1}', "json", background=False)
+    assert gold[:-1] + ";48;2;17;28;46mkey" in render(rt.print_md, "```yaml\nkey: v\n```")  # on the block's #111c2e
+    assert gold + "<a" not in render(rt.print_xml, "<a/>", background=False)  # XML tags are still tags
+    assert gold + "'k'" in render(rt.print_obj, {"k": 1}, background=False)
+
+
+def test_quotes_inside_strings_are_not_keys(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    gold, green = "38;2;255;251;230", "38;2;163;230;53"  # Midnight Slate key, string
+    out = render(rt.print_obj, {"msg": "error 'foo': not found", "x'y\"z": 1})
+    assert f"{green};48;2;15;23;42m\"error 'foo': not found\"" in out  # one string, no key inside
+    assert f"{gold};48;2;15;23;42m'x\\'y\"z'" in out  # the escaped quote doesn't split the key

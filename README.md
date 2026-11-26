@@ -64,7 +64,7 @@ set_default_theme("Dracula")                          # every call from now on u
 
 Every function takes `theme=`, which can be a `ThemeName`, its string value (`"Nord"`), or your own rich `Theme`. To change the theme everywhere at once, call `set_default_theme("Dracula")`. It accepts the same values, and calling it with no argument goes back to Midnight Slate.
 
-In a VS Code notebook the default theme follows VS Code's colour theme (`workbench.colorTheme` in your user settings): you get Light Modern with a light VS Code theme and Dark Modern with a dark one. This only works when the kernel runs on the same machine as VS Code. Otherwise the default stays Midnight Slate. `print_md` is the exception under a dark VS Code theme: it keeps Midnight Slate. Calling `set_default_theme` sets the theme for `print_md` too.
+In a VS Code notebook the default theme follows VS Code's colour theme (`workbench.colorTheme` in your user settings): you get Light Modern with a light VS Code theme and Midnight Slate with a dark one. This only works when the kernel runs on the same machine as VS Code. Otherwise the default is Midnight Slate.
 
 If you want a theme for your own `Console`, `ThemeName.X.theme` gives you the underlying rich `Theme`.
 
