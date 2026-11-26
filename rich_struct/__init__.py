@@ -20,6 +20,7 @@ from rich.protocol import is_renderable
 from rich.segment import Segment
 from rich.style import Style
 from rich.syntax import Syntax
+from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
@@ -70,20 +71,30 @@ def use_rich_font_override(enabled: bool = True) -> None:
 _font_override = False
 
 
+# A string literal in a repr. Backslash escapes don't end it, and neither does a quote followed by a letter:
+# custom __repr__s often quote text without escaping it ('Haystack's latest'); Python's own repr never does that.
+_SINGLE = r"'(?:\\.|[^'\\\n]|'(?=\w))*'(?!\w)"
+_DOUBLE = r'"(?:\\.|[^"\\\n]|"(?=\w))*"(?!\w)'
+_LITERAL = rf"b?(?:{_SINGLE}|{_DOUBLE})"
+_STRING_LITERAL = re.compile(rf"(?<![\\\w]){_LITERAL}")
+
+
+def _with_our_strings(regex: str) -> str:
+    """rich's repr regex with its strings read as above; theirs end at any quote."""
+    for theirs, ours in ((r"b?'.*?(?<!\\)'", _SINGLE), (r'b?\".*?(?<!\\)\"', _DOUBLE)):
+        regex = regex.replace(theirs, f"b?{ours}|{theirs}")  # theirs still catches a string with no proper end
+    return regex
+
+
 class _ObjectHighlighter(ReprHighlighter):
     """rich's repr highlighting, plus dict keys as ``repr.key`` (themes without it show them as strings)."""
 
     # ponytail: any string literal followed by ": " counts as a key; a real parser if that misfires.
     # Every literal is matched whole, so quotes inside a string never start one.
     highlights = [
-        *ReprHighlighter.highlights,
-        r"""(?<![\\\w])(?:(?P<key>b?(?:'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"))(?=: )"""
-        r"""|b?(?:'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"))""",
+        *map(_with_our_strings, ReprHighlighter.highlights),
+        rf"(?<![\\\w])(?:(?P<key>{_LITERAL})(?=: )|{_LITERAL})",
     ]
-
-
-# a quoted string in a repr; backslash escapes inside it don't end it
-_STRING_LITERAL = re.compile(r"""(?<![\\\w])b?(['"])(?:\\.|(?!\1).)*\1""")
 
 
 class _NewlineHighlighter(_ObjectHighlighter):
@@ -95,7 +106,8 @@ class _NewlineHighlighter(_ObjectHighlighter):
         result = text.blank_copy()
         pos = 0
         for literal in _STRING_LITERAL.finditer(plain):
-            pad = " " * (literal.start(1) - plain.rfind("\n", 0, literal.start()))
+            quote = literal.start() + (plain[literal.start()] == "b")
+            pad = " " * (quote - plain.rfind("\n", 0, literal.start()))
             for escape in re.finditer(r"\\r\\n|\\.", literal.group()):
                 if escape.group() in ("\\n", "\\r\\n", "\\r"):
                     start = literal.start() + escape.start()
@@ -208,7 +220,7 @@ def print(
     if len(objects) > 1:
         # rich puts dicts, dataclasses... on their own lines; keep them inline among other arguments
         objects = tuple(
-            ReprHighlighter()(pretty_repr(obj, max_width=sys.maxsize)) if is_expandable(obj) else obj
+            _ObjectHighlighter()(pretty_repr(obj, max_width=sys.maxsize)) if is_expandable(obj) else obj
             for obj in objects
         )
     for obj in objects:
@@ -286,7 +298,7 @@ class _BlockQuote(BlockQuote):
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         bar = Segment("▌ ", self.style + console.get_style("markdown.block_quote.border", default="none"))
         for segment in super().__rich_console__(console, options):
-            yield bar if segment.text == "▌ " else segment
+            yield bar if isinstance(segment, Segment) and segment.text == "▌ " else segment
 
 
 class _Table(TableElement):
@@ -294,6 +306,7 @@ class _Table(TableElement):
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         for table in super().__rich_console__(console, options):
+            assert isinstance(table, Table)
             table.header_style = console.get_style("markdown.table.header_row", default="none")
             table.row_styles = ["none", console.get_style("markdown.table.stripe", default="none")]
             yield table

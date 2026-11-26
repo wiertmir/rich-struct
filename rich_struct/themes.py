@@ -16,7 +16,7 @@ from pygments.token import (
     Token,
 )
 from rich.style import Style
-from rich.syntax import ANSISyntaxTheme, SyntaxTheme
+from rich.syntax import ANSISyntaxTheme
 from rich.theme import Theme
 
 
@@ -360,7 +360,7 @@ class _SyntaxTheme(ANSISyntaxTheme):
         return self.background
 
 
-def syntax_theme(theme: Theme, block: bool = False) -> SyntaxTheme:
+def syntax_theme(theme: Theme, block: bool = False) -> "_SyntaxTheme":
     """Code-highlighting theme from a rich Theme's ``syntax.*`` styles.
 
     Styles the theme doesn't define fall back to the default theme's. With ``block``

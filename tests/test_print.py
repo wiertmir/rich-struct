@@ -420,3 +420,17 @@ def test_quotes_inside_strings_are_not_keys(monkeypatch):
     out = render(rt.print_obj, {"msg": "error 'foo': not found", "x'y\"z": 1})
     assert f"{green};48;2;15;23;42m\"error 'foo': not found\"" in out  # one string, no key inside
     assert f"{gold};48;2;15;23;42m'x\\'y\"z'" in out  # the escaped quote doesn't split the key
+
+
+def test_unescaped_apostrophes_in_custom_reprs_stay_inside_the_string(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+
+    class Document:  # quotes its text without escaping it, like Haystack's
+        def __repr__(self):
+            return "Document(content: 'Haystack's latest release', meta: {'version': 1.15})"
+
+    out = render(rt.print_obj, [Document()], background=False)
+    assert "38;2;163;230;53m'Haystack's latest release'" in out  # one string, Midnight Slate green
+    assert "38;2;255;251;230m'version'" in out  # the key after it is still a key
+    assert "38;2;163;230;53m'a\\'b\"'" in render(rt.print_obj, ["a'b\""], background=False)  # Python's escape
