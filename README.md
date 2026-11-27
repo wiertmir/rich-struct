@@ -64,7 +64,7 @@ set_default_theme("Dracula")                          # every call from now on u
 
 Every function takes `theme=`, which can be a `ThemeName`, its string value (`"Nord"`), or your own rich `Theme`. To change the theme everywhere at once, call `set_default_theme("Dracula")`. It accepts the same values, and calling it with no argument goes back to Midnight Slate.
 
-In a VS Code notebook the default theme follows VS Code's colour theme (`workbench.colorTheme` in your user settings): you get Light Modern with a light VS Code theme and Midnight Slate with a dark one. This only works when the kernel runs on the same machine as VS Code. Otherwise the default is Midnight Slate.
+In a VS Code notebook the default theme follows VS Code's colour theme (`workbench.colorTheme` in your user settings): you get Paper Frost with a light VS Code theme and Midnight Slate with a dark one. This only works when the kernel runs on the same machine as VS Code. Otherwise the default is Midnight Slate.
 
 If you want a theme for your own `Console`, `ThemeName.X.theme` gives you the underlying rich `Theme`.
 
@@ -230,7 +230,7 @@ On free-threaded Python, both the console and the file show the thread name, lik
 | GitHub Dark | Light+ |
 | Night Owl | Everforest Light |
 | Winter is Coming | Light Modern |
-| Dark Modern | Paper Frost |
+| Dark Modern | Paper Frost (default under a light VS Code theme) |
 | Midnight Slate (default) | |
 
 Midnight Slate and Paper Frost are rich-struct's own. The others take their colours from each editor theme's palette, so they look close to the original, though a given token may not get the exact colour your editor gives it.

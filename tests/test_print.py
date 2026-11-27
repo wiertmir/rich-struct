@@ -371,7 +371,7 @@ def test_vscode_theme_picks_light_or_dark_modern(monkeypatch, tmp_path):
     settings = tmp_path / "Code" / "User" / "settings.json"
     assert rt._vscode_theme() is None  # no settings file
     settings.parent.mkdir(parents=True)
-    light, dark = ThemeName.LIGHT_MODERN, ThemeName.MIDNIGHT_SLATE
+    light, dark = ThemeName.PAPER_FROST, ThemeName.MIDNIGHT_SLATE
     for value, expected in [
         ("Paper Frost", light),  # one of ours
         ("Default Light Modern", light),

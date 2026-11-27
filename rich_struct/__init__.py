@@ -138,7 +138,7 @@ def _frame(background: Optional[Style], border_style: Optional[Style] = None) ->
 
 
 def _vscode_theme() -> Optional[ThemeName]:
-    """In a VS Code notebook, Light Modern or Midnight Slate to match VS Code's colour theme; otherwise None.
+    """In a VS Code notebook, Paper Frost or Midnight Slate to match VS Code's colour theme; otherwise None.
 
     Reads ``workbench.colorTheme`` from VS Code's user settings, so it only sees them when the kernel runs
     on the machine VS Code runs on.
@@ -164,7 +164,7 @@ def _vscode_theme() -> Optional[ThemeName]:
         light = not ThemeName(name).is_dark  # e.g. "Paper Frost"
     except ValueError:
         light = "light" in name.lower()  # e.g. "Default Light Modern", "Quiet Light"
-    return ThemeName.LIGHT_MODERN if light else ThemeName.MIDNIGHT_SLATE
+    return ThemeName.PAPER_FROST if light else ThemeName.MIDNIGHT_SLATE
 
 
 _default_theme: ThemeType = _vscode_theme() or DEFAULT_THEME
