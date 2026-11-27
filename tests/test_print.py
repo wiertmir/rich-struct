@@ -480,3 +480,14 @@ def test_other_themes_keep_pygments_tokens():
 
     nord = syntax_theme(ThemeName.NORD.theme).style_map
     assert all(themed_lexer(lang, "k: {{ x }}", nord) is None for lang in ("yaml", "xml", "json", "python"))
+
+
+def test_paper_frost_comments_are_italic_and_docs_sage(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    py = paper_frost(rt.print_syntax, 'def f():\n    """Doc."""\n    # note', "python")
+    assert ('"""Doc."""', "italic #8db600") in py and ("# note", "italic #64748b") in py
+    assert ("/// doc", "italic #8db600") in paper_frost(rt.print_syntax, "/// doc\nfn f() {}", "rust")
+    assert ("# c", "italic #64748b") in paper_frost(rt.print_yaml, "k: v # c")
+    assert ("<!-- c -->", "italic #64748b") in paper_frost(rt.print_xml, "<!-- c --><a/>")
+    assert "38;2;141;182;0" not in render(rt.print_syntax, '"""Doc."""', "python", theme="Nord")  # Paper Frost only

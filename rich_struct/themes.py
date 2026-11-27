@@ -204,6 +204,7 @@ _OVERRIDES = {
         "json.bool_true": "#7c3aed",
         "json.bool_false": "#7c3aed",
         "json.null": "#7c3aed",
+        "syntax.doc": "italic #8db600",  # doc comments and docstrings, as in the VS Code theme
         "syntax.key": "#1e3f7a",
         "syntax.data_punctuation": "#8a96a8",
         "syntax.data_indicator": "#0e7490",
@@ -268,9 +269,11 @@ _TOKENS = {
     Error: "tag",
 }
 
-# Tokens from .lexers, coloured only by themes that define the "syntax.*" style; elsewhere they fall back
-# to their parent token (Punctuation.Data -> Punctuation), so other themes look as they did.
-_DATA_TOKENS = {
+# Tokens coloured only by themes that define the "syntax.*" style; elsewhere they fall back to their parent
+# token (String.Doc -> String, Punctuation.Data -> Punctuation), so other themes look as they did.
+# Most come from .lexers.
+_OPTIONAL_TOKENS = {
+    String.Doc: "doc",  # Python docstrings, Rust /// and //! comments
     Punctuation.Data: "data_punctuation",  # JSON and YAML : , { } [ ]
     Punctuation.Indicator.Data: "data_punctuation",
     Name.Namespace.Data: "data_punctuation",  # YAML --- and ...
@@ -433,5 +436,5 @@ def syntax_theme(theme: Theme, block: bool = False) -> "_SyntaxTheme":
     }
     background = theme.styles.get("syntax.block", Style.null()) if block else Style.null()
     style_map = {token: styles[name] for token, name in _TOKENS.items()}
-    style_map.update({t: theme.styles[f"syntax.{n}"] for t, n in _DATA_TOKENS.items() if f"syntax.{n}" in theme.styles})
+    style_map.update({t: theme.styles[f"syntax.{n}"] for t, n in _OPTIONAL_TOKENS.items() if f"syntax.{n}" in theme.styles})
     return _SyntaxTheme(style_map, background, theme.styles.get("syntax.key"))
