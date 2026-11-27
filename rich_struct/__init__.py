@@ -21,9 +21,10 @@ from rich.segment import Segment
 from rich.style import Style
 from rich.syntax import Syntax
 from rich.table import Table
-from rich.text import Text
+from rich.text import Span, Text
 from rich.theme import Theme
 
+from .lexers import jinja_spans, themed_lexer
 from .tables import is_array, to_table
 from .themes import DEFAULT_THEME, ThemeLiteral, ThemeName, syntax_theme
 
@@ -227,8 +228,12 @@ def print(
         if isinstance(obj, Markdown):
             obj.code_theme = syntax_theme(rich_theme, block=True)
         elif isinstance(obj, Syntax):
-            # ponytail: Syntax has no public theme setter; rebuild the object if rich renames this
-            obj._theme = code_theme.keyed if obj.lexer and _is_data(obj.lexer.aliases[0]) else code_theme
+            name = obj.lexer.aliases[0] if obj.lexer else ""
+            # ponytail: Syntax has no public theme or lexer setter; rebuild the object if rich renames these
+            obj._theme = code_theme.keyed if _is_data(name) else code_theme
+            obj._lexer = themed_lexer(name, obj.code, code_theme.style_map) or obj._lexer
+        elif isinstance(obj, JSON) and "json.punctuation" in rich_theme.styles:
+            _style_json(obj.text, code_theme)
     # width goes to the Console: Console.print can only narrow it, print_list needs it wider
     console = Console(theme=rich_theme, file=file, width=kwargs.pop("width", None))
     base = rich_theme.styles.get("background")
@@ -317,13 +322,27 @@ def _is_data(lexer: str) -> bool:
     return lexer in ("json", "yaml", "yml")
 
 
+def _style_json(text: Text, code_theme: Any) -> None:
+    """Extras for ``print_json`` in themes that define ``json.punctuation``: muted quotes around keys, colons
+    and commas, ``json.key_top`` for the top-level object's keys, and Jinja tags inside strings."""
+    plain = text.plain
+    # rich's JSON is indented by 2, one key per line, so top-level keys are the ones indented by exactly 2
+    for match in re.finditer(r'^( *)(")((?:[^"\\]|\\.)*)(")(:)', plain, re.MULTILINE):
+        text.spans += [Span(match.start(g), match.end(g), "json.punctuation") for g in (2, 4, 5)]
+        if len(match.group(1)) == 2:
+            text.spans.append(Span(match.start(3), match.end(3), "json.key_top"))
+    text.spans += [Span(m.start(), m.end(), "json.punctuation") for m in re.finditer(r",$", plain, re.MULTILINE)]
+    text.spans += [Span(a, b, code_theme.style_map[t]) for a, b, t in jinja_spans(plain) if t in code_theme.style_map]
+
+
 class _CodeBlock(CodeBlock):
-    """A code block; JSON and YAML keys get ``syntax.key``."""
+    """A code block; JSON and YAML keys get ``syntax.key``, and tokens are re-tagged as in ``print``."""
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        if _is_data(self.lexer_name):
-            self.theme = getattr(self.theme, "keyed", self.theme)
-        yield from super().__rich_console__(console, options)
+        theme = getattr(self.theme, "keyed", self.theme) if _is_data(self.lexer_name) else self.theme
+        code = str(self.text).rstrip()
+        lexer = themed_lexer(self.lexer_name, code, getattr(theme, "style_map", {}))
+        yield Syntax(code, lexer or self.lexer_name, theme=theme, word_wrap=True, padding=1)  # as rich's CodeBlock
 
 
 class _Markdown(Markdown):

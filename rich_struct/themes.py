@@ -12,6 +12,7 @@ from pygments.token import (
     Name,
     Number,
     Operator,
+    Punctuation,
     String,
     Token,
 )
@@ -194,11 +195,34 @@ _OVERRIDES = {
         "markdown.link": "underline #2563eb",
         "markdown.link_url": "underline #2563eb",  # rich styles link text with link_url
         "markdown.hr": "#cbd5e1",
-        "json.brace": "#64748b",
+        # JSON, YAML and XML as in the Paper Frost VS Code theme (../paper-frost)
+        "json.brace": "#8a96a8",
+        "json.punctuation": "#8a96a8",  # quotes around keys, colons, commas
         "json.key": "#1e3f7a",
-        "json.bool_true": "bold #0e7490",
-        "json.bool_false": "bold #0e7490",
-        "json.null": "italic #7c3aed",
+        "json.key_top": "#115e59",
+        "json.number": "#be185d",
+        "json.bool_true": "#7c3aed",
+        "json.bool_false": "#7c3aed",
+        "json.null": "#7c3aed",
+        "syntax.key": "#1e3f7a",
+        "syntax.data_punctuation": "#8a96a8",
+        "syntax.data_indicator": "#0e7490",
+        "syntax.data_plain": "#0f766e",
+        "syntax.data_number": "#be185d",
+        "syntax.data_constant": "#7c3aed",
+        "syntax.data_block": "#15803d",
+        "syntax.data_anchor": "#c2410c",
+        "syntax.data_element": "#1e3f7a",
+        "syntax.data_namespace": "#0e7490",
+        "syntax.data_prolog": "#7c8797",
+        "syntax.data_cdata": "#0f766e",
+        "syntax.data_entity": "#0e7490",
+        # Jinja: greens from paper-frost/colors.html, all italic
+        "syntax.jinja_delimiter": "italic #6c7c59",  # Dusty Olive: {{ }} {% %} | . operators
+        "syntax.jinja_keyword": "italic #568203",  # Forest Moss: for, if, in, true, none
+        "syntax.jinja_variable": "italic #1b4d3e",  # Pine Teal
+        "syntax.jinja_filter": "italic #355e3b",  # Hunter Green: filters and function calls
+        "syntax.jinja_literal": "italic #4f7942",  # Fern: strings and numbers
         # objects (print_obj)
         "repr.background": "on #ffffff",
         "repr.attrib_name": "#1e3f7a",
@@ -242,6 +266,41 @@ _TOKENS = {
     Generic.Inserted: "string",
     Generic.Heading: "function",
     Error: "tag",
+}
+
+# Tokens from .lexers, coloured only by themes that define the "syntax.*" style; elsewhere they fall back
+# to their parent token (Punctuation.Data -> Punctuation), so other themes look as they did.
+_DATA_TOKENS = {
+    Punctuation.Data: "data_punctuation",  # JSON and YAML : , { } [ ]
+    Punctuation.Indicator.Data: "data_punctuation",
+    Name.Namespace.Data: "data_punctuation",  # YAML --- and ...
+    Name.Tag.Punctuation: "data_punctuation",  # XML < </ > />
+    Name.Attribute.Punctuation: "data_punctuation",  # XML =
+    String.Delimiter.Data: "data_punctuation",  # XML quotes
+    Punctuation.Indicator: "data_indicator",  # YAML -
+    Token.Literal.Scalar.Plain: "data_plain",
+    Name.Variable.Plain: "data_plain",
+    Token.Literal.Scalar.Plain.Number: "data_number",
+    Name.Variable.Number: "data_number",
+    Number.Data: "data_number",
+    Token.Literal.Scalar.Plain.Constant: "data_constant",
+    Name.Variable.Constant: "data_constant",
+    Keyword.Constant.Data: "data_constant",
+    Name.Constant.Data: "data_block",  # YAML block scalar lines
+    Name.Label.Data: "data_anchor",
+    Name.Variable.Alias: "data_anchor",
+    Keyword.Type.Data: "data_anchor",
+    Name.Tag.Element: "data_element",
+    Name.Tag.Namespace: "data_namespace",
+    Name.Attribute.Namespace: "data_namespace",
+    Comment.Preproc.Prolog: "data_prolog",
+    Comment.Preproc.Cdata: "data_cdata",
+    Name.Entity.Data: "data_entity",
+    Token.Jinja.Delimiter: "jinja_delimiter",
+    Token.Jinja.Keyword: "jinja_keyword",
+    Token.Jinja.Variable: "jinja_variable",
+    Token.Jinja.Filter: "jinja_filter",
+    Token.Jinja.Literal: "jinja_literal",
 }
 
 
@@ -374,4 +433,5 @@ def syntax_theme(theme: Theme, block: bool = False) -> "_SyntaxTheme":
     }
     background = theme.styles.get("syntax.block", Style.null()) if block else Style.null()
     style_map = {token: styles[name] for token, name in _TOKENS.items()}
+    style_map.update({t: theme.styles[f"syntax.{n}"] for t, n in _DATA_TOKENS.items() if f"syntax.{n}" in theme.styles})
     return _SyntaxTheme(style_map, background, theme.styles.get("syntax.key"))

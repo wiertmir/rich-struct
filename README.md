@@ -68,6 +68,8 @@ In a VS Code notebook the default theme follows VS Code's colour theme (`workben
 
 If you want a theme for your own `Console`, `ThemeName.X.theme` gives you the underlying rich `Theme`.
 
+Paper Frost colours JSON, YAML and XML the way its VS Code theme does: muted punctuation, numbers and booleans set apart, and namespaces and anchors in their own colours. It also highlights Jinja tags (`{{ }}`, `{% %}`) in italic greens, inside YAML, XML, HTML, JSON strings and Python strings (f-strings excepted). This applies everywhere these formats are printed: `print_json`, `print_yaml`, `print_xml`, `print_syntax` and Markdown code blocks.
+
 ## Notebooks
 
 In a notebook, each `print_*` output sits in its own box: rounded corners, a little padding and a 1px border in a colour between the theme's background and text. That keeps it separate from the rest of the notebook, even when the notebook uses the same theme. Log blocks look the same and also have an accent bar on the left.

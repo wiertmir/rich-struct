@@ -434,3 +434,49 @@ def test_unescaped_apostrophes_in_custom_reprs_stay_inside_the_string(monkeypatc
     assert "38;2;163;230;53m'Haystack's latest release'" in out  # one string, Midnight Slate green
     assert "38;2;255;251;230m'version'" in out  # the key after it is still a key
     assert "38;2;163;230;53m'a\\'b\"'" in render(rt.print_obj, ["a'b\""], background=False)  # Python's escape
+
+
+def paper_frost(fn, *args) -> list:
+    """(text, style) runs of ``fn``'s output in Paper Frost, whitespace-only runs left out."""
+    text = Text.from_ansi(render(fn, *args, theme="Paper Frost", background=False))
+    runs = [(text.plain[s.start : s.end].strip(), str(s.style)) for s in sorted(text.spans, key=lambda s: s.start)]
+    return [(t, s.replace("color(", "").replace(")", "")) for t, s in runs if t]
+
+
+def test_paper_frost_data_colours_match_its_vscode_theme(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    yaml = paper_frost(rt.print_yaml, 'k: 42\nb: true\ns: "q"\nt: 3 apples\nl:\n  - &a x\n  - *a\n')
+    for run in [("k", "#1e3f7a"), (":", "#8a96a8"), ("42", "#be185d"), ("true", "#7c3aed"), ('"', "#8a96a8"),
+                ("q", "#15803d"), ("3", "#0f766e"), ("-", "#0e7490"), ("&a", "#c2410c"), ("*a", "#c2410c")]:
+        assert run in yaml, run
+    xml = paper_frost(rt.print_xml, '<?xml version="1.0"?><ns:r a="1">&amp;<![CDATA[c]]></ns:r>')
+    for run in [('<?xml version="1.0"?>', "#7c8797"), ("<", "#8a96a8"), ("ns:", "#0e7490"), ("r", "#1e3f7a"),
+                ("a", "#a16207"), ("=", "#8a96a8"), ("1", "#15803d"), ("&amp;", "#0e7490"), ("<![CDATA[c]]>", "#0f766e")]:
+        assert run in xml, run
+    json_ = paper_frost(rt.print_json, {"top": {"in": [1, None]}})
+    for run in [("top", "#115e59"), ("in", "#1e3f7a"), ('"', "#8a96a8"), (":", "#8a96a8"), (",", "#8a96a8"),
+                ("1", "#be185d"), ("null", "#7c3aed")]:
+        assert run in json_, run
+
+
+def test_paper_frost_colours_jinja(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    delim, keyword, var, filt, lit = (f"italic {c}" for c in ("#6c7c59", "#568203", "#1b4d3e", "#355e3b", "#4f7942"))
+    yaml = paper_frost(rt.print_yaml, "m: Hi {{ user.name | title }}\n{% for x in xs %}\n")
+    assert [("{{", delim), ("user", var), (".", delim), ("name", var), ("|", delim), ("title", filt)] == yaml[3:9]
+    assert ("for", keyword) in yaml
+    assert ("u", var) in paper_frost(rt.print_xml, '<a href="{{ u }}"/>')
+    assert ("'x'", lit) in paper_frost(rt.print_json, {"k": "{{ v | default('x') }}"})
+    py = paper_frost(rt.print_syntax, 'a = "{% if b %}"\nc = f"{{ d }}"', "python")
+    assert ("if", keyword) in py and ("d", var) not in py  # f-strings: {{ is an escaped brace
+    assert ("x", var + " on #f1f5f9") in paper_frost(rt.print_md, "```yaml\nk: '{{ x }}'\n```")  # code block background
+
+
+def test_other_themes_keep_pygments_tokens():
+    from rich_struct.lexers import themed_lexer
+    from rich_struct.themes import syntax_theme
+
+    nord = syntax_theme(ThemeName.NORD.theme).style_map
+    assert all(themed_lexer(lang, "k: {{ x }}", nord) is None for lang in ("yaml", "xml", "json", "python"))
