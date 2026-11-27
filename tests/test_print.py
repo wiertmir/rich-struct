@@ -327,7 +327,7 @@ def test_notebook_output_is_framed(monkeypatch):
     tags = [h.split(">")[0] for h in html]
     assert "--notebook-cell-output-font-family" in tags[0]  # the frame keeps the font override
     assert "background:#0b1320;border:1px solid #" in tags[0]  # Midnight Slate
-    assert "background:#ffffff;border:1px solid #0369a1" in tags[1]  # Paper Frost: its blue, as light themes do
+    assert "background:#ffffff;border:1px solid #007a74" in tags[1]  # Paper Frost's own teal border
     assert "background:rgba(127,127,127,.08);border:1px solid rgba" in tags[2]  # not painted: neutral tint
     assert all("border-radius:4px" in t for t in tags)
     assert rich.jupyter.JUPYTER_HTML_FORMAT == original  # swapped for each print only
@@ -491,3 +491,10 @@ def test_paper_frost_comments_are_italic_and_docs_sage(monkeypatch):
     assert ("# c", "italic #64748b") in paper_frost(rt.print_yaml, "k: v # c")
     assert ("<!-- c -->", "italic #64748b") in paper_frost(rt.print_xml, "<!-- c --><a/>")
     assert "38;2;141;182;0" not in render(rt.print_syntax, '"""Doc."""', "python", theme="Nord")  # Paper Frost only
+
+
+def test_light_themes_frame_notebook_output_in_their_blue():
+    from rich_struct.themes import _PALETTES
+
+    assert ThemeName.GITHUB_LIGHT.theme.styles["frame.border"].color.get_truecolor().hex == "#" + _PALETTES[ThemeName.GITHUB_LIGHT].split()[8]
+    assert "frame.border" not in ThemeName.NORD.theme.styles  # dark themes blend background and text

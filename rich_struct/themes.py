@@ -176,6 +176,7 @@ _OVERRIDES = {
         "repr.tag_end": "#94a3b8",
     },
     T.PAPER_FROST: {
+        "frame.border": "#007a74",  # notebook output box, teal instead of the light themes' blue
         "syntax.tag": "#0369a1",
         "syntax.block": "on #f1f5f9",
         "markdown.h1": "bold #0f766e",
