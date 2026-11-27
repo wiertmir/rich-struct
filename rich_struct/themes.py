@@ -128,6 +128,7 @@ _OVERRIDES = {
     T.MIDNIGHT_SLATE: {  # markdown and code as in the Midnight Slate VS Code theme (../midnight-slate)
         # colours with alpha there are blended onto the background here
         "repr.error": "#C51E3A",
+        "frame.border": "#9966cc",  # notebook output box: Lavender Purple (paper-frost/colors.html)
         "repr.exception": "#BC8F8F",
         "syntax.block": "on #111c2e",
         "markdown.h1": "bold #5eead4",
@@ -136,8 +137,7 @@ _OVERRIDES = {
         "markdown.h4": "bold #a5b4fc",
         "markdown.h5": "#a5b4fc",
         "markdown.h6": "#818cf8",
-        "markdown.strong": "bold #fffbe6",  # white with a hint of gold, as are property names:
-        "syntax.key": "#fffbe6",  # JSON and YAML keys in code
+        "markdown.strong": "bold #fffbe6",  # white with a hint of gold, as are property names in objects and logs
         "markdown.em": "italic #94a3b8",
         "markdown.emph": "italic #94a3b8",
         "markdown.s": "strike #64748b",
@@ -152,11 +152,34 @@ _OVERRIDES = {
         "markdown.table.border": "#3b4555",  # #94a3b859
         "markdown.table.header_row": "on #161e2c",  # #94a3b814
         "markdown.table.stripe": "on #111925",  # #ffffff06
-        "json.brace": "#94a3b8",
-        "json.key": "#fffbe6",
-        "json.bool_true": "bold #22d3ee",
-        "json.bool_false": "bold #22d3ee",
-        "json.null": "italic #85B09A",
+        # JSON, YAML and XML as in the Midnight Slate VS Code theme
+        "json.brace": "#64748b",
+        "json.punctuation": "#64748b",  # quotes around keys, colons, commas
+        "json.key": "#a3c2f2",
+        "json.key_top": "#5eead4",
+        "json.number": "#fbbf24",
+        "json.bool_true": "#a78bfa",
+        "json.bool_false": "#a78bfa",
+        "json.null": "#a78bfa",
+        "syntax.key": "#a3c2f2",
+        "syntax.data_punctuation": "#64748b",
+        "syntax.data_indicator": "#22d3ee",
+        "syntax.data_plain": "#5eead4",
+        "syntax.data_number": "#fbbf24",
+        "syntax.data_constant": "#a78bfa",
+        "syntax.data_block": "#a3e635",
+        "syntax.data_anchor": "#fb923c",
+        "syntax.data_element": "#a3c2f2",
+        "syntax.data_namespace": "#22d3ee",
+        "syntax.data_prolog": "#7b8aa0",
+        "syntax.data_cdata": "#5eead4",
+        "syntax.data_entity": "#22d3ee",
+        # Jinja: greens from paper-frost/colors.html that read on the navy background, all italic
+        "syntax.jinja_delimiter": "italic #8a9a5b",  # Palm Leaf: {{ }} {% %} | . operators
+        "syntax.jinja_keyword": "italic #8db600",  # Lime Moss: for, if, in, true, none
+        "syntax.jinja_variable": "italic #d0f0c0",  # Tea Green
+        "syntax.jinja_filter": "italic #50c878",  # Emerald: filters and function calls
+        "syntax.jinja_literal": "italic #93c572",  # Willow Green: strings and numbers
         # objects (print_obj)
         "repr.background": "on #0f172a",
         "repr.attrib_name": "#fffbe6",

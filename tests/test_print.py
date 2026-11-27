@@ -35,7 +35,7 @@ def test_theme_colours_reach_the_output(monkeypatch):
     assert keyword in render(rt.print_syntax, "def f(): pass", "python")
     assert keyword in render(rt.print_md, "```python\ndef f(): pass\n```")
     assert keyword not in render(rt.print_syntax, "def f(): pass", "python", theme="Nord")
-    assert "38;2;255;251;230" in render(rt.print_json, {"a": 1})  # key, gold-tinted #fffbe6
+    assert "38;2;94;234;212" in render(rt.print_json, {"a": 1})  # top-level key, #5eead4
 
 
 @dataclass
@@ -82,8 +82,8 @@ def test_every_printer_accepts_none(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     for fn in helpers:
-        assert "3;38;2;133;176;154" in render(fn, None), fn.__name__  # italic #85B09A, same as JSON null
-    assert "3;38;2;133;176;154" in render(rt.print_json, None)  # JSON null, italic #85B09A
+        assert "3;38;2;133;176;154" in render(fn, None), fn.__name__  # italic #85B09A
+    assert "38;2;167;139;250" in render(rt.print_json, None)  # JSON null, #a78bfa as in the VS Code theme
 
 
 def test_set_default_theme_changes_every_printer(monkeypatch):
@@ -326,7 +326,7 @@ def test_notebook_output_is_framed(monkeypatch):
     rt.print_md("# Title", background=False)
     tags = [h.split(">")[0] for h in html]
     assert "--notebook-cell-output-font-family" in tags[0]  # the frame keeps the font override
-    assert "background:#0b1320;border:1px solid #" in tags[0]  # Midnight Slate
+    assert "background:#0b1320;border:1px solid #9966cc" in tags[0]  # Midnight Slate's violet border
     assert "background:#ffffff;border:1px solid #007a74" in tags[1]  # Paper Frost's own teal border
     assert "background:rgba(127,127,127,.08);border:1px solid rgba" in tags[2]  # not painted: neutral tint
     assert all("border-radius:4px" in t for t in tags)
@@ -402,14 +402,14 @@ def test_midnight_slate_quotes_and_tables_follow_the_vscode_theme(monkeypatch):
     assert "48;2;17;25;37m" not in render(rt.print_md, "| a |\n|---|\n| 1 |\n| 2 |", theme="Nord")
 
 
-def test_midnight_slate_property_names_are_gold_everywhere(monkeypatch):
+def test_midnight_slate_object_keys_are_gold_and_data_keys_blue(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
-    gold = "38;2;255;251;230m"  # #fffbe6
-    assert gold + "key" in render(rt.print_yaml, "key: v", background=False)
-    assert gold + '"k"' in render(rt.print_syntax, '{"k": 1}', "json", background=False)
-    assert gold[:-1] + ";48;2;17;28;46mkey" in render(rt.print_md, "```yaml\nkey: v\n```")  # on the block's #111c2e
-    assert gold + "<a" not in render(rt.print_xml, "<a/>", background=False)  # XML tags are still tags
+    gold, blue = "38;2;255;251;230m", "38;2;163;194;242m"  # #fffbe6, #a3c2f2
+    assert blue + "key" in render(rt.print_yaml, "key: v", background=False)
+    assert blue + "k" in render(rt.print_syntax, '{"k": 1}', "json", background=False)
+    assert blue[:-1] + ";48;2;17;28;46mkey" in render(rt.print_md, "```yaml\nkey: v\n```")  # on the block's #111c2e
+    assert blue + "a" in render(rt.print_xml, "<a/>", background=False)  # element name
     assert gold + "'k'" in render(rt.print_obj, {"k": 1}, background=False)
 
 
@@ -436,9 +436,9 @@ def test_unescaped_apostrophes_in_custom_reprs_stay_inside_the_string(monkeypatc
     assert "38;2;163;230;53m'a\\'b\"'" in render(rt.print_obj, ["a'b\""], background=False)  # Python's escape
 
 
-def paper_frost(fn, *args) -> list:
-    """(text, style) runs of ``fn``'s output in Paper Frost, whitespace-only runs left out."""
-    text = Text.from_ansi(render(fn, *args, theme="Paper Frost", background=False))
+def paper_frost(fn, *args, theme: str = "Paper Frost") -> list:
+    """(text, style) runs of ``fn``'s output in ``theme``, whitespace-only runs left out."""
+    text = Text.from_ansi(render(fn, *args, theme=theme, background=False))
     runs = [(text.plain[s.start : s.end].strip(), str(s.style)) for s in sorted(text.spans, key=lambda s: s.start)]
     return [(t, s.replace("color(", "").replace(")", "")) for t, s in runs if t]
 
@@ -498,3 +498,19 @@ def test_light_themes_frame_notebook_output_in_their_blue():
 
     assert ThemeName.GITHUB_LIGHT.theme.styles["frame.border"].color.get_truecolor().hex == "#" + _PALETTES[ThemeName.GITHUB_LIGHT].split()[8]
     assert "frame.border" not in ThemeName.NORD.theme.styles  # dark themes blend background and text
+
+
+def test_midnight_slate_data_and_jinja_colours_match_its_vscode_theme(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    ms = "Midnight Slate"
+    yaml = paper_frost(rt.print_yaml, "k: 42\nb: true\nl:\n  - &a x\nm: Hi {{ user | title }}\n", theme=ms)
+    for run in [("k", "#a3c2f2"), (":", "#64748b"), ("42", "#fbbf24"), ("true", "#a78bfa"), ("-", "#22d3ee"),
+                ("&a", "#fb923c"), ("x", "#5eead4"), ("{{", "italic #8a9a5b"), ("user", "italic #d0f0c0"), ("title", "italic #50c878")]:
+        assert run in yaml, run
+    xml = paper_frost(rt.print_xml, '<?xml version="1.0"?><ns:r a="{% if b %}1{% endif %}"/>', theme=ms)
+    for run in [('<?xml version="1.0"?>', "#7b8aa0"), ("ns:", "#22d3ee"), ("r", "#a3c2f2"), ("a", "#fcd34d"), ("if", "italic #8db600")]:
+        assert run in xml, run
+    json_ = paper_frost(rt.print_json, {"top": {"in": [1, None, "{{ 'x' }}"]}}, theme=ms)
+    for run in [("top", "#5eead4"), ("in", "#a3c2f2"), (",", "#64748b"), ("1", "#fbbf24"), ("null", "#a78bfa"), ("'x'", "italic #93c572")]:
+        assert run in json_, run

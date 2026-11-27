@@ -68,11 +68,11 @@ In a VS Code notebook the default theme follows VS Code's colour theme (`workben
 
 If you want a theme for your own `Console`, `ThemeName.X.theme` gives you the underlying rich `Theme`.
 
-Paper Frost colours JSON, YAML and XML the way its VS Code theme does: muted punctuation, numbers and booleans set apart, and namespaces and anchors in their own colours. It also highlights Jinja tags (`{{ }}`, `{% %}`) in italic greens, inside YAML, XML, HTML, JSON strings and Python strings (f-strings excepted). This applies everywhere these formats are printed: `print_json`, `print_yaml`, `print_xml`, `print_syntax` and Markdown code blocks.
+Paper Frost and Midnight Slate colour JSON, YAML and XML the way their VS Code themes do: muted punctuation, numbers and booleans set apart, and namespaces and anchors in their own colours. Both also highlight Jinja tags (`{{ }}`, `{% %}`) in italic greens, inside YAML, XML, HTML, JSON strings and Python strings (f-strings excepted). This applies everywhere these formats are printed: `print_json`, `print_yaml`, `print_xml`, `print_syntax` and Markdown code blocks.
 
 ## Notebooks
 
-In a notebook, each `print_*` output sits in its own box: rounded corners, a little padding and a 1px border. Light themes draw the border in their own blue (Paper Frost in teal, `#007a74`), and dark themes in a colour between the background and the text. A custom `Theme` can set it with a `frame.border` style. That keeps it separate from the rest of the notebook, even when the notebook uses the same theme. Log blocks look the same and also have an accent bar on the left.
+In a notebook, each `print_*` output sits in its own box: rounded corners, a little padding and a 1px border. Light themes draw the border in their own blue (Paper Frost in teal, `#007a74`), and dark themes in a colour between the background and the text (Midnight Slate in violet, `#9966cc`). A custom `Theme` can set it with a `frame.border` style. That keeps it separate from the rest of the notebook, even when the notebook uses the same theme. Log blocks look the same and also have an accent bar on the left.
 
 VS Code notebooks show rich's output in rich's own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font that plain `print()` gets, and `False` to switch back. Lines stay closer together than in `print()` output on purpose. VS Code gives `print()` a looser line height, but rich keeps `line-height:normal` so that table and panel borders join into solid lines, and copying `print()`'s spacing would leave gaps in them.
 
