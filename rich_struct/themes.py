@@ -407,6 +407,8 @@ def _build(name: ThemeName) -> Theme:
         "rule.text": blue,
         "pretty": fg,
     }
+    if name not in _DARK:
+        styles["frame.border"] = blue  # the notebook output box (see _frame)
     styles.update(_OVERRIDES.get(name, {}))
     return Theme(styles)
 

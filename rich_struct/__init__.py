@@ -126,13 +126,14 @@ def _blend(a: Style, b: Style, share: float) -> Style:
     return Style(color=Color.from_triplet(mixed))
 
 
-def _frame(background: Optional[Style]) -> str:
-    """CSS framing notebook output: the theme's background with a border between it and the text colour,
+def _frame(background: Optional[Style], border_style: Optional[Style] = None) -> str:
+    """CSS framing notebook output: the theme's background with a border in the theme's ``frame.border``
+    colour (light themes: their blue) or else between the background and the text colour,
     or a faint grey tint and border that suit light and dark notebooks alike."""
     if background and background.color and background.bgcolor:
         fg, bg = Style(color=background.color), Style(color=background.bgcolor)
-        border = _blend(bg, fg, 0.4).color.get_truecolor().hex
-        return f"background:{background.bgcolor.get_truecolor().hex};border:1px solid {border}"
+        colour = border_style.color if border_style and border_style.color else _blend(bg, fg, 0.4).color
+        return f"background:{background.bgcolor.get_truecolor().hex};border:1px solid {colour.get_truecolor().hex}"
     return "background:rgba(127,127,127,.08);border:1px solid rgba(127,127,127,.45)"
 
 
@@ -255,7 +256,7 @@ def print(
         # a bordered box sets the output apart from the notebook; its background also fills the gaps
         # between rows that use_rich_font_override's taller VS Code font leaves
         style = kwargs.get("style")
-        box = _frame(style if background and isinstance(style, Style) else None)
+        box = _frame(style if background and isinstance(style, Style) else None, rich_theme.styles.get("frame.border"))
         # ponytail: swaps a module global for one print; not thread-safe, fine for notebooks
         rich.jupyter.JUPYTER_HTML_FORMAT = html_format.replace(
             '">{code}', f';margin:0;padding:6px 10px;border-radius:4px;{box}">{{code}}', 1

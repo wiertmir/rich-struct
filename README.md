@@ -72,7 +72,7 @@ Paper Frost colours JSON, YAML and XML the way its VS Code theme does: muted pun
 
 ## Notebooks
 
-In a notebook, each `print_*` output sits in its own box: rounded corners, a little padding and a 1px border in a colour between the theme's background and text. That keeps it separate from the rest of the notebook, even when the notebook uses the same theme. Log blocks look the same and also have an accent bar on the left.
+In a notebook, each `print_*` output sits in its own box: rounded corners, a little padding and a 1px border. Light themes draw the border in their own blue (Paper Frost `#0369a1`), and dark themes in a colour between the background and the text. A custom `Theme` can set it with a `frame.border` style. That keeps it separate from the rest of the notebook, even when the notebook uses the same theme. Log blocks look the same and also have an accent bar on the left.
 
 VS Code notebooks show rich's output in rich's own monospace font (Menlo, DejaVu Sans Mono...). Call `use_rich_font_override(True)` to use the font that plain `print()` gets, and `False` to switch back. Lines stay closer together than in `print()` output on purpose. VS Code gives `print()` a looser line height, but rich keeps `line-height:normal` so that table and panel borders join into solid lines, and copying `print()`'s spacing would leave gaps in them.
 

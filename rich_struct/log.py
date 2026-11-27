@@ -216,7 +216,7 @@ def _kernel_mark() -> Any:
     return getattr(session, "message_count", None), getattr(shell, "execution_count", None)
 
 
-def _show_in_notebook(line: Text, background: Optional[Style], accent: Style) -> None:
+def _show_in_notebook(line: Text, background: Optional[Style], accent: Style, border: Optional[Style] = None) -> None:
     """Lines logged one after another go into one block, updated in place (a display per line leaves gaps);
     anything else the cell outputs in between ends the block, so the next line starts a new one."""
     from IPython.display import display
@@ -224,7 +224,7 @@ def _show_in_notebook(line: Text, background: Optional[Style], accent: Style) ->
     out = Console(record=True, file=io.StringIO(), width=10_000, color_system="truecolor", force_jupyter=False)
     out.print(line, soft_wrap=True)
     html = out.export_html(inline_styles=True, code_format="{code}")
-    box = _frame(background)
+    box = _frame(background, border)
     if accent.color:
         box += f";border-left:3px solid {accent.color.get_truecolor().hex}"
     # rich's <pre> (and its font, see use_rich_font_override), our block style last so it wins
@@ -285,7 +285,7 @@ def _render(theme: Optional[ThemeType], message: str, console: bool, thread: boo
             line.append("\n" + exc, base)
         if console:
             if notebook:
-                _show_in_notebook(line, styles.get("background"), get("repr.call"))
+                _show_in_notebook(line, styles.get("background"), get("repr.call"), styles.get("frame.border"))
             else:
                 _print(line, file=sys.stderr, theme=theme)
         if handlers:  # same line without colours, dated with local time and UTC offset

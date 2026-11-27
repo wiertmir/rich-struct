@@ -327,7 +327,7 @@ def test_notebook_output_is_framed(monkeypatch):
     tags = [h.split(">")[0] for h in html]
     assert "--notebook-cell-output-font-family" in tags[0]  # the frame keeps the font override
     assert "background:#0b1320;border:1px solid #" in tags[0]  # Midnight Slate
-    assert "background:#ffffff;border:1px solid #" in tags[1]  # Paper Frost
+    assert "background:#ffffff;border:1px solid #0369a1" in tags[1]  # Paper Frost: its blue, as light themes do
     assert "background:rgba(127,127,127,.08);border:1px solid rgba" in tags[2]  # not painted: neutral tint
     assert all("border-radius:4px" in t for t in tags)
     assert rich.jupyter.JUPYTER_HTML_FORMAT == original  # swapped for each print only
