@@ -6,7 +6,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import IO, Any, Optional, Union
+from typing import IO, Any, List, Optional, Union
 
 import rich.jupyter
 from rich.color import Color, ColorTriplet
@@ -325,13 +325,20 @@ def _is_data(lexer: str) -> bool:
 
 def _style_json(text: Text, code_theme: Any) -> None:
     """Extras for ``print_json`` in themes that define ``json.punctuation``: muted quotes around keys, colons
-    and commas, ``json.key_top`` for the top-level object's keys, and Jinja tags inside strings."""
+    and commas, keys coloured by depth (``json.key0`` to ``json.key4``, then repeating), and Jinja tags inside
+    strings."""
     plain = text.plain
-    # rich's JSON is indented by 2, one key per line, so top-level keys are the ones indented by exactly 2
-    for match in re.finditer(r'^( *)(")((?:[^"\\]|\\.)*)(")(:)', plain, re.MULTILINE):
-        text.spans += [Span(match.start(g), match.end(g), "json.punctuation") for g in (2, 4, 5)]
-        if len(match.group(1)) == 2:
-            text.spans.append(Span(match.start(3), match.end(3), "json.key_top"))
+    opened: List[str] = []  # { and [ not yet closed; only objects count towards a key's depth, as in VS Code
+    for match in re.finditer(r'(")((?:[^"\\]|\\.)*)(")(\s*:)?|[{}\[\]]', plain):
+        if match.group(1) is None:
+            if match.group() in "{[":
+                opened.append(match.group())
+            elif opened:
+                opened.pop()
+        elif match.group(4):  # a string followed by a colon is a key
+            text.spans += [Span(match.start(g), match.end(g), "json.punctuation") for g in (1, 3, 4)]
+            depth = max(opened.count("{") - 1, 0)
+            text.spans.append(Span(match.start(2), match.end(2), f"json.key{depth % 5}"))
     text.spans += [Span(m.start(), m.end(), "json.punctuation") for m in re.finditer(r",$", plain, re.MULTILINE)]
     text.spans += [Span(a, b, code_theme.style_map[t]) for a, b, t in jinja_spans(plain) if t in code_theme.style_map]
 

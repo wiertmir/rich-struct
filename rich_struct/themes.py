@@ -155,13 +155,23 @@ _OVERRIDES = {
         # JSON, YAML and XML as in the Midnight Slate VS Code theme
         "json.brace": "#64748b",
         "json.punctuation": "#64748b",  # quotes around keys, colons, commas
-        "json.key": "#a3c2f2",
-        "json.key_top": "#5eead4",
+        "json.key": "#9eb9d4",
+        # keys by depth, repeating every 5 levels: blues from paper-frost/colors.html
+        "json.key0": "#9eb9d4",
+        "json.key1": "#318ce7",
+        "json.key2": "#87cefa",
+        "json.key3": "#7c9ed9",
+        "json.key4": "#6cb4ee",
         "json.number": "#fbbf24",
         "json.bool_true": "#a78bfa",
         "json.bool_false": "#a78bfa",
         "json.null": "#a78bfa",
-        "syntax.key": "#a3c2f2",
+        "syntax.key": "#9eb9d4",  # keys the depth count misses
+        "syntax.key0": "#9eb9d4",
+        "syntax.key1": "#318ce7",
+        "syntax.key2": "#87cefa",
+        "syntax.key3": "#7c9ed9",
+        "syntax.key4": "#6cb4ee",
         "syntax.data_punctuation": "#64748b",
         "syntax.data_indicator": "#22d3ee",
         "syntax.data_plain": "#5eead4",
@@ -222,14 +232,24 @@ _OVERRIDES = {
         # JSON, YAML and XML as in the Paper Frost VS Code theme (../paper-frost)
         "json.brace": "#8a96a8",
         "json.punctuation": "#8a96a8",  # quotes around keys, colons, commas
-        "json.key": "#1e3f7a",
-        "json.key_top": "#115e59",
+        "json.key": "#1f305e",
+        # keys by depth, repeating every 5 levels: blues from paper-frost/colors.html
+        "json.key0": "#1f305e",
+        "json.key1": "#0070bb",
+        "json.key2": "#1c39bb",
+        "json.key3": "#26619c",
+        "json.key4": "#3457d5",
         "json.number": "#be185d",
         "json.bool_true": "#7c3aed",
         "json.bool_false": "#7c3aed",
         "json.null": "#7c3aed",
         "syntax.doc": "italic #8db600",  # doc comments and docstrings, as in the VS Code theme
-        "syntax.key": "#1e3f7a",
+        "syntax.key": "#1f305e",  # keys the depth count misses
+        "syntax.key0": "#1f305e",
+        "syntax.key1": "#0070bb",
+        "syntax.key2": "#1c39bb",
+        "syntax.key3": "#26619c",
+        "syntax.key4": "#3457d5",
         "syntax.data_punctuation": "#8a96a8",
         "syntax.data_indicator": "#0e7490",
         "syntax.data_plain": "#0f766e",
@@ -298,6 +318,7 @@ _TOKENS = {
 # Most come from .lexers.
 _OPTIONAL_TOKENS = {
     String.Doc: "doc",  # Python docstrings, Rust /// and //! comments
+    **{getattr(Name.Tag, f"Level{n}"): f"key{n}" for n in range(5)},  # JSON and YAML keys by depth (mod 5)
     Punctuation.Data: "data_punctuation",  # JSON and YAML : , { } [ ]
     Punctuation.Indicator.Data: "data_punctuation",
     Name.Namespace.Data: "data_punctuation",  # YAML --- and ...

@@ -1,4 +1,5 @@
 import io
+import json
 from array import array
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -35,7 +36,7 @@ def test_theme_colours_reach_the_output(monkeypatch):
     assert keyword in render(rt.print_syntax, "def f(): pass", "python")
     assert keyword in render(rt.print_md, "```python\ndef f(): pass\n```")
     assert keyword not in render(rt.print_syntax, "def f(): pass", "python", theme="Nord")
-    assert "38;2;94;234;212" in render(rt.print_json, {"a": 1})  # top-level key, #5eead4
+    assert "38;2;158;185;212" in render(rt.print_json, {"a": 1})  # top-level key, #9eb9d4
 
 
 @dataclass
@@ -405,10 +406,10 @@ def test_midnight_slate_quotes_and_tables_follow_the_vscode_theme(monkeypatch):
 def test_midnight_slate_object_keys_are_gold_and_data_keys_blue(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
-    gold, blue = "38;2;255;251;230m", "38;2;163;194;242m"  # #fffbe6, #a3c2f2
-    assert blue + "key" in render(rt.print_yaml, "key: v", background=False)
-    assert blue + "k" in render(rt.print_syntax, '{"k": 1}', "json", background=False)
-    assert blue[:-1] + ";48;2;17;28;46mkey" in render(rt.print_md, "```yaml\nkey: v\n```")  # on the block's #111c2e
+    gold, blue, top = "38;2;255;251;230m", "38;2;163;194;242m", "38;2;158;185;212m"  # #fffbe6, #a3c2f2, #9eb9d4
+    assert top + "key" in render(rt.print_yaml, "key: v", background=False)
+    assert top + "k" in render(rt.print_syntax, '{"k": 1}', "json", background=False)
+    assert top[:-1] + ";48;2;17;28;46mkey" in render(rt.print_md, "```yaml\nkey: v\n```")  # on the block's #111c2e
     assert blue + "a" in render(rt.print_xml, "<a/>", background=False)  # element name
     assert gold + "'k'" in render(rt.print_obj, {"k": 1}, background=False)
 
@@ -447,7 +448,7 @@ def test_paper_frost_data_colours_match_its_vscode_theme(monkeypatch):
     monkeypatch.setenv("FORCE_COLOR", "1")
     monkeypatch.setenv("COLORTERM", "truecolor")
     yaml = paper_frost(rt.print_yaml, 'k: 42\nb: true\ns: "q"\nt: 3 apples\nl:\n  - &a x\n  - *a\n')
-    for run in [("k", "#1e3f7a"), (":", "#8a96a8"), ("42", "#be185d"), ("true", "#7c3aed"), ('"', "#8a96a8"),
+    for run in [("k", "#1f305e"), (":", "#8a96a8"), ("42", "#be185d"), ("true", "#7c3aed"), ('"', "#8a96a8"),
                 ("q", "#15803d"), ("3", "#0f766e"), ("-", "#0e7490"), ("&a", "#c2410c"), ("*a", "#c2410c")]:
         assert run in yaml, run
     xml = paper_frost(rt.print_xml, '<?xml version="1.0"?><ns:r a="1">&amp;<![CDATA[c]]></ns:r>')
@@ -455,7 +456,7 @@ def test_paper_frost_data_colours_match_its_vscode_theme(monkeypatch):
                 ("a", "#a16207"), ("=", "#8a96a8"), ("1", "#15803d"), ("&amp;", "#0e7490"), ("<![CDATA[c]]>", "#0f766e")]:
         assert run in xml, run
     json_ = paper_frost(rt.print_json, {"top": {"in": [1, None]}})
-    for run in [("top", "#115e59"), ("in", "#1e3f7a"), ('"', "#8a96a8"), (":", "#8a96a8"), (",", "#8a96a8"),
+    for run in [("top", "#1f305e"), ("in", "#0070bb"), ('"', "#8a96a8"), (":", "#8a96a8"), (",", "#8a96a8"),
                 ("1", "#be185d"), ("null", "#7c3aed")]:
         assert run in json_, run
 
@@ -505,12 +506,31 @@ def test_midnight_slate_data_and_jinja_colours_match_its_vscode_theme(monkeypatc
     monkeypatch.setenv("COLORTERM", "truecolor")
     ms = "Midnight Slate"
     yaml = paper_frost(rt.print_yaml, "k: 42\nb: true\nl:\n  - &a x\nm: Hi {{ user | title }}\n", theme=ms)
-    for run in [("k", "#a3c2f2"), (":", "#64748b"), ("42", "#fbbf24"), ("true", "#a78bfa"), ("-", "#22d3ee"),
+    for run in [("k", "#9eb9d4"), (":", "#64748b"), ("42", "#fbbf24"), ("true", "#a78bfa"), ("-", "#22d3ee"),
                 ("&a", "#fb923c"), ("x", "#5eead4"), ("{{", "italic #8a9a5b"), ("user", "italic #d0f0c0"), ("title", "italic #50c878")]:
         assert run in yaml, run
     xml = paper_frost(rt.print_xml, '<?xml version="1.0"?><ns:r a="{% if b %}1{% endif %}"/>', theme=ms)
     for run in [('<?xml version="1.0"?>', "#7b8aa0"), ("ns:", "#22d3ee"), ("r", "#a3c2f2"), ("a", "#fcd34d"), ("if", "italic #8db600")]:
         assert run in xml, run
     json_ = paper_frost(rt.print_json, {"top": {"in": [1, None, "{{ 'x' }}"]}}, theme=ms)
-    for run in [("top", "#5eead4"), ("in", "#a3c2f2"), (",", "#64748b"), ("1", "#fbbf24"), ("null", "#a78bfa"), ("'x'", "italic #93c572")]:
+    for run in [("top", "#9eb9d4"), ("in", "#318ce7"), (",", "#64748b"), ("1", "#fbbf24"), ("null", "#a78bfa"), ("'x'", "italic #93c572")]:
         assert run in json_, run
+
+
+@pytest.mark.parametrize("theme", ["Paper Frost", "Midnight Slate"])
+def test_keys_are_coloured_by_depth_repeating_every_5_levels(monkeypatch, theme):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("COLORTERM", "truecolor")
+    styles = ThemeName(theme).theme.styles
+    colour = [str(styles[f"json.key{n}"].color.get_truecolor().hex) for n in range(5)]
+    assert len(set(colour)) == 5
+    # depth counts enclosing mappings and objects only (as in VS Code): list items and arrays add nothing
+    yaml = "k0:\n  k1:\n    k2:\n      k3:\n        k4:\n          k5:\n            k6: v\nl0:\n  - m1: 1\n  - - n1: 2\nf0: {g1: {h2: 1}}\n"
+    depth = {"k0": 0, "k1": 1, "k2": 2, "k3": 3, "k4": 4, "k5": 0, "k6": 1, "l0": 0, "m1": 1, "n1": 1, "f0": 0, "g1": 1, "h2": 2}
+    for out in (paper_frost(rt.print_yaml, yaml, theme=theme), paper_frost(rt.print_md, f"```yaml\n{yaml}```", theme=theme)):
+        keys = {text: style.split(" on ")[0] for text, style in out if text in depth}
+        assert keys == {k: colour[d] for k, d in depth.items()}, keys
+    data = {"k0": {"k1": [{"k2": {"k3": {"k4": {"k5": 1}}}}], "s1": "a: b"}}
+    for out in (paper_frost(rt.print_json, data, theme=theme), paper_frost(rt.print_syntax, json.dumps(data), "json", theme=theme)):
+        keys = {text: style for text, style in out if text in ("k0", "k1", "k2", "k3", "k4", "k5", "s1")}
+        assert keys == {"k0": colour[0], "k1": colour[1], "k2": colour[2], "k3": colour[3], "k4": colour[4], "k5": colour[0], "s1": colour[1]}, keys

@@ -70,9 +70,20 @@ class _Retag(Filter):
         yield from tokens
 
 
+def _key(depth: int) -> _TokenType:
+    """A key ``depth`` objects or mappings deep (0: top level); themes colour 5 levels, then repeat."""
+    return getattr(Name.Tag, f"Level{max(depth, 0) % 5}")
+
+
 def _json(tokens: Tokens) -> Iterator[Tuple[_TokenType, str]]:
+    opened: List[str] = []  # { and [ not yet closed; only objects count towards a key's depth, as in VS Code
     for ttype, value in tokens:
         if ttype in Punctuation:
+            for char in value:  # pygments joins neighbours: "]}"
+                if char in "{[":
+                    opened.append(char)
+                elif char in "}]" and opened:
+                    opened.pop()
             ttype = Punctuation.Data
         elif ttype in Number:
             ttype = Number.Data
@@ -80,7 +91,7 @@ def _json(tokens: Tokens) -> Iterator[Tuple[_TokenType, str]]:
             ttype = Keyword.Constant.Data
         elif ttype is Name.Tag and len(value) > 1:  # "key": quotes apart, still keys elsewhere
             yield Name.Tag.Punctuation, value[0]
-            yield ttype, value[1:-1]
+            yield _key(opened.count("{") - 1), value[1:-1]
             ttype, value = Name.Tag.Punctuation, value[-1]
         yield ttype, value
 
@@ -95,12 +106,37 @@ def _yaml(tokens: List[Tuple[_TokenType, str]]) -> Iterator[Tuple[_TokenType, st
             i += step
         return tokens[i][0] if 0 <= i < len(tokens) else None
 
+    # a key's depth is the number of mappings around it, as in VS Code (lists don't count): block mappings by
+    # indentation, flow mappings ({...}) by nesting
+    block: List[int] = []  # columns of the block keys whose values hold the current line
+    flow: List[str] = []  # { and [ not yet closed
+    column = 0
     for i, (ttype, value) in enumerate(tokens):
-        if ttype is Punctuation:
+        start = column
+        column = len(value) - value.rfind("\n") - 1 if "\n" in value else column + len(value)
+        if ttype is Name.Tag:
+            if flow:
+                ttype = _key(len(block) + flow.count("{") - 1)
+            else:
+                at = start + len(value) - len(value.lstrip())
+                while block and block[-1] >= at:
+                    block.pop()
+                ttype = _key(len(block))
+                block.append(at)
+        elif ttype is Punctuation:
             ttype = Punctuation.Data
+        elif ttype is Punctuation.Indicator and value == "-" and not flow:  # a list item ends the keys right of it
+            while block and block[-1] >= start:
+                block.pop()
         elif ttype is Punctuation.Indicator and value != "-":
+            if value in "{[":
+                flow.append(value)
+            elif value in "}]" and flow:
+                flow.pop()
             ttype = Punctuation.Indicator.Data
-        elif ttype is Name.Namespace:  # --- and ...
+        elif ttype is Name.Namespace:  # --- and ...: a new document
+            block.clear()
+            flow.clear()
             ttype = Name.Namespace.Data
         elif ttype is Name.Variable and value.startswith("*"):
             ttype = Name.Variable.Alias
